@@ -172,11 +172,21 @@
     PluginAPI.registerHook(PluginAPI.Hooks.DAY_CHANGE, function (p) { onDayChange(p && p.todayStr); });
   }
 
-  PluginAPI.onReady(async function () {
+  async function start() {
     try { await initDay(); } catch (e) { state.day = dayOf(Date.now()); }
     await closeStale();
     setInterval(checkpoint, CHECKPOINT_MS);
     // Without the DAY_CHANGE hook (before version 20), check for a day change every minute
     setInterval(function () { var d = dayOf(Date.now()); if (state.day && d !== state.day) onDayChange(d); }, MIN);
-  });
+  }
+
+  // onReady is optional in the PluginAPI types (onReady?): feature-detect it and
+  // start right away on hosts that do not provide it.
+  if (typeof PluginAPI.onReady === 'function') {
+    PluginAPI.onReady(start);
+  } else {
+    Promise.resolve().then(start).catch(function (e) {
+      console.warn('[compact-time-tracker] start failed', e);
+    });
+  }
 })();
