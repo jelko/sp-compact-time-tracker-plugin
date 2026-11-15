@@ -1,0 +1,99 @@
+{
+  "PLUGIN": {
+    "NAME": "Kompakt-Zeiterfassung",
+    "DESCRIPTION": "Kompakte Zeiterfassung: Aufgabe suchen, Start/Stopp, chronologische Liste mit Korrektur."
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "Woran arbeitest du? Aufgabe oder Projekt suchen …",
+    "ARIA": "Aufgabe oder Projekt suchen",
+    "PROJECTS": "Projekte",
+    "SHOW_TASKS": "Aufgaben anzeigen",
+    "ONLY_PROJECT": "Nur {{project}}",
+    "CLEAR_FILTER": "Filter aufheben ×",
+    "DONE": "erledigt",
+    "NO_RESULTS": "Keine Treffer.",
+    "CREATE_IN": "+ Neue Aufgabe „{{title}}“ anlegen in",
+    "CREATE_HINT": "· Projekt wählen, Enter = erstes",
+    "CLEAR_SELECTION": "Auswahl aufheben",
+    "EDIT_ARIA": "Aufgabe suchen"
+  },
+  "PROJECT": {
+    "NEW": "Neues Projekt",
+    "NAME_PLACEHOLDER": "Projektname",
+    "COLOR": "Farbe {{color}}",
+    "NONE": "Ohne Projekt",
+    "CREATED": "Projekt „{{name}}“ angelegt",
+    "CREATE_FAILED": "Projekt konnte nicht angelegt werden: {{error}}"
+  },
+  "TASK": {
+    "DELETED": "(gelöschte Aufgabe)",
+    "CREATED_IN": "Aufgabe angelegt in {{project}}",
+    "CREATE_FAILED": "Aufgabe konnte nicht angelegt werden: {{error}}",
+    "IS_DONE": "„{{title}}“ ist erledigt. Wieder öffnen, um darauf zu buchen?",
+    "REOPEN": "Wieder öffnen",
+    "REOPENED": "Aufgabe wieder geöffnet",
+    "SELECT_FIRST": "Erst eine Aufgabe wählen"
+  },
+  "TIMER": {
+    "START": "Start",
+    "STOP": "Stopp",
+    "MODE_TIMER": "Timer",
+    "MODE_TIMER_ARIA": "Timer-Modus",
+    "MODE_MANUAL": "Manuell",
+    "MODE_MANUAL_ARIA": "Manueller Modus",
+    "START_FAILED": "Start nicht möglich: {{error}}",
+    "STOP_FAILED": "Stopp nicht möglich: {{error}}",
+    "STOP_NOT_APPLIED": "Stopp wurde von Super Productivity nicht übernommen"
+  },
+  "MANUAL": {
+    "DATE": "Datum",
+    "FROM": "Von",
+    "TO": "Bis",
+    "OR": "oder",
+    "DURATION": "Dauer",
+    "DURATION_ONLY": "Nur Dauer, ohne Uhrzeit",
+    "BOOK": "Buchen",
+    "BOOKED_RANGE": "{{from}}–{{to}} auf „{{title}}“ gebucht",
+    "BOOKED_DURATION": "{{duration}} auf „{{title}}“ gebucht (ohne Uhrzeit)",
+    "NEED_INPUT": "Von und Bis angeben oder eine Dauer wie 1:30, 90m, 1,5h"
+  },
+  "LIST": {
+    "THIS_WEEK": "Diese Woche",
+    "TOTAL": "Gesamt",
+    "TODAY": "Heute",
+    "YESTERDAY": "Gestern",
+    "EMPTY": "In diesem Zeitraum wurde keine Zeit gebucht. Wähle oben eine Aufgabe und starte den Timer.",
+    "LOAD_MORE": "Weitere 7 Tage laden",
+    "NO_TIME": "ohne Uhrzeit",
+    "NO_TIME_TOOLTIP": "Gebuchte Zeit ohne Abschnitt: manuell als Dauer gebucht, in Super Productivity selbst erfasst, vor Version 2.0 oder ohne aktives Plugin",
+    "RUNNING": "läuft",
+    "RUNNING_LOCKED": "Läuft gerade, Korrektur nach dem Stoppen",
+    "CONTINUE": "Fortsetzen",
+    "IS_RUNNING": "Läuft",
+    "MORE_ACTIONS": "Weitere Aktionen",
+    "EDIT": "Bearbeiten / umbuchen",
+    "DELETE": "Löschen",
+    "CANCEL": "Abbrechen",
+    "SAVE": "Speichern",
+    "CREATE": "Anlegen",
+    "CONFIRM_DELETE": "{{what}} vom {{day}} bei „{{title}}“ löschen?",
+    "WITHOUT_TIME": "{{duration}} ohne Uhrzeit",
+    "DELETED": "Eintrag gelöscht",
+    "SAVED": "Gespeichert",
+    "DURATION_FIXED": "Dauer korrigiert",
+    "TIME_FIXED": "Zeit korrigiert",
+    "OVER": "Abschnitte > gebucht",
+    "OVER_TOOLTIP": "Die Abschnitte sind länger als die gebuchte Zeit (timeSpentOnDay), z. B. nach einer Änderung in Super Productivity oder auf einem anderen Gerät. Maßgeblich ist die gebuchte Zeit; Abschnitt anpassen oder löschen."
+  },
+  "ERROR": {
+    "GENERIC": "Fehler: {{error}}",
+    "LOAD": "Daten konnten nicht geladen werden: {{error}}",
+    "DURATION": "Dauer nicht erkannt, z. B. 1:30, 90m oder 1,5h",
+    "RANGE_ORDER": "„Bis“ muss nach „Von“ liegen",
+    "RANGE_MISSING": "Von und Bis angeben",
+    "TASK_NOT_FOUND": "Aufgabe nicht gefunden"
+  },
+  "INFO": {
+    "STORAGE": "Maßgeblich ist die Zeit je Tag (timeSpentOnDay). Von–Bis-Abschnitte werden zusätzlich gespeichert und synchronisiert."
+  }
+}

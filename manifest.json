@@ -1,12 +1,46 @@
 {
-  "id": "my-plugin",
-  "name": "My Plugin",
-  "version": "1.0.0",
+  "id": "compact-time-tracker",
+  "name": "Compact Time Tracker",
+  "version": "2.0.0",
   "manifestVersion": 1,
   "minSupVersion": "19.3.0",
-  "description": "Says hello from the header and cheers when you finish a task.",
-  "author": "Your Name",
-  "hooks": ["taskComplete"],
-  "permissions": ["getCurrentContextTasks", "showSnack"],
-  "icon": "icon.svg"
+  "description": "Compact time tracking: search a task, start/stop, chronological list with corrections. timeSpentOnDay stays authoritative; from–to entries are stored with persistDataSynced.",
+  "author": "JA",
+  "hooks": [
+    "anyTaskUpdate",
+    "currentTaskChange",
+    "dayChange",
+    "languageChange",
+    "persistedDataChanged",
+    "projectListUpdate"
+  ],
+  "permissions": [
+    "addProject",
+    "addTask",
+    "dispatchAction",
+    "getAllProjects",
+    "getAppState",
+    "getCurrentLanguage",
+    "getDayContext",
+    "getTasks",
+    "listSyncedDataKeys",
+    "loadSyncedData",
+    "persistDataSynced",
+    "showIndexHtmlAsView",
+    "showSnack",
+    "startTracking",
+    "stopTracking",
+    "translate",
+    "updateTask"
+  ],
+  "dataSharing": [],
+  "iFrame": true,
+  "sidePanel": false,
+  "icon": "icon.svg",
+  "i18n": {
+    "languages": [
+      "en",
+      "de"
+    ]
+  }
 }

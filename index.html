@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compact Time Tracker</title>
+<style>
+/* Layout: one column, capture bar at the top (search | timer | start), day groups below as a dense list.
+   Colours: --ct-* are set by script from Super Productivity's theme variables (applyTheme).
+   The values here apply only if a variable is missing (e.g. older versions) or the plugin is opened outside the app. */
+:root{
+  --ct-surface:#ffffff; --ct-fg:#1f2430; --ct-accent:#3f63d8; --ct-stop:#d64545; --ct-warn:#e0a200;
+  --ct-accent-fg:#ffffff; --ct-stop-fg:#ffffff;
+  --ct-font:"Open Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ct-mono:ui-monospace,"SFMono-Regular","Roboto Mono",Menlo,Consolas,monospace;
+  /* derived, works with any theme */
+  --ct-muted:color-mix(in srgb,var(--ct-fg) 62%,transparent);
+  --ct-line:color-mix(in srgb,var(--ct-fg) 14%,transparent);
+  --ct-surface-2:color-mix(in srgb,var(--ct-fg) 5%,var(--ct-surface));
+  --ct-hover:color-mix(in srgb,var(--ct-fg) 8%,var(--ct-surface));
+  --ct-field-bg:color-mix(in srgb,var(--ct-fg) 4%,var(--ct-surface));
+  --ct-field-border:color-mix(in srgb,var(--ct-fg) 22%,transparent);
+  --ct-focus:color-mix(in srgb,var(--ct-accent) 55%,transparent);
+  --ct-warn-bg:color-mix(in srgb,var(--ct-warn) 18%,var(--ct-surface)); --ct-warn-fg:var(--ct-fg);
+  --ct-shadow:color-mix(in srgb,#000 18%,transparent);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:transparent;color:var(--ct-fg);font:14px/1.4 var(--ct-font);padding:16px clamp(8px,3vw,16px) 40px}
+.wrap{container-type:inline-size;container-name:ct}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ct-focus);outline-offset:1px}
+.num{font-variant-numeric:tabular-nums}
+.status{font-size:12px;color:var(--ct-muted)}
+.draft{font-size:12px;color:var(--ct-muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.draft b{color:var(--ct-fg);font-weight:500}
+
+/* Capture bar */
+.bar{background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:4px;display:flex;align-items:stretch;flex-wrap:wrap;position:relative}
+.search{flex:1 1 280px;position:relative;display:flex;align-items:center;min-width:0}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:14px 16px;font-size:15px}
+.search input:focus{outline:none}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;padding:2px 8px;border-radius:3px}
+.chip .dot,.dot{width:8px;height:8px;min-width:8px;aspect-ratio:1;border-radius:50%;flex:0 0 8px;display:inline-block}
+#selProj{display:flex;min-width:0;max-width:45%;flex:0 1 auto}
+.sel-proj{margin-right:6px;color:var(--ct-fg);max-width:100%;min-width:0}
+.sel-proj .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sel-proj button{border:0;background:none;color:var(--ct-muted);padding:0 0 0 2px;font-size:15px;line-height:1}
+.ctrl{display:flex;align-items:stretch;flex:0 0 auto;min-width:0}
+.seg{display:flex;align-items:center;gap:4px;padding:0 10px;border-left:1px solid var(--ct-line)}
+.iconbtn{border:0;padding:0;margin:0;background:none;color:var(--ct-muted);width:32px;height:32px;flex:0 0 32px;border-radius:3px;display:grid;place-items:center;line-height:0}
+.iconbtn:hover{background:var(--ct-hover);color:var(--ct-fg)}
+.iconbtn[aria-pressed="true"]{color:var(--ct-accent)}
+.iconbtn svg{width:18px;height:18px;display:block}
+.search .iconbtn{margin-right:8px}
+.timer{display:flex;align-items:center;gap:12px;padding:8px 12px;border-left:1px solid var(--ct-line)}
+.clock{font:500 17px var(--ct-mono);min-width:88px;text-align:right}
+.go{border:0;border-radius:3px;padding:9px 0;width:96px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;font-size:13px;background:var(--ct-accent);color:var(--ct-accent-fg)}
+.go.stop{background:var(--ct-stop);color:#fff}
+.manual{display:flex;align-items:center;gap:8px;padding:8px 12px;border-left:1px solid var(--ct-line);flex-wrap:wrap}
+.manual input{border:1px solid var(--ct-field-border);background:var(--ct-field-bg);color:var(--ct-fg);border-radius:3px;padding:7px 8px}
+.manual input.dur{width:84px;font-family:var(--ct-mono)}
+
+/* Dropdown */
+.dd{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:4px;
+  box-shadow:0 8px 24px var(--ct-shadow);max-height:380px;overflow:auto;z-index:20;padding:6px 0}
+.dd h4{margin:6px 0 2px;padding:0 14px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ct-muted)}
+.opt{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer}
+.opt.sub{padding-left:32px}
+.opt-clear{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;border-bottom:1px solid var(--ct-line)}
+.opt-clear .t{flex:1;min-width:0}
+.opt-clear .meta{font-size:12px;color:var(--ct-muted)}
+.opt:hover,.opt.hl{background:var(--ct-hover)}
+.opt .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opt .meta{font-size:12px;color:var(--ct-muted);white-space:nowrap}
+.opt.done .t{color:var(--ct-muted);text-decoration:line-through}
+.create-head:first-child{border-top:0;margin-top:0}
+.create-head{border-top:1px solid var(--ct-line);margin-top:6px;padding:10px 14px 4px;color:var(--ct-accent);font-weight:500}
+.create-head .hint{font-size:12px;color:var(--ct-muted);font-weight:400}
+.create-row{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px 10px}
+.opt.pchip{display:inline-flex;gap:6px;padding:4px 10px;border:1px solid var(--ct-line);border-radius:12px;font-size:13px}
+.opt.pchip.hl{border-color:var(--ct-accent)}
+.opt .hint{font-size:12px;color:var(--ct-muted);font-weight:400}
+
+/* New project popover */
+.pop{position:absolute;right:0;top:100%;margin-top:4px;background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:4px;box-shadow:0 8px 24px var(--ct-shadow);padding:14px;z-index:30;width:min(300px,100%);display:flex;flex-direction:column;gap:10px}
+.pop label{font-size:12px;color:var(--ct-muted)}
+.pop input[type=text]{width:100%;border:1px solid var(--ct-field-border);background:var(--ct-field-bg);color:var(--ct-fg);border-radius:3px;padding:8px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatches button{width:22px;height:22px;min-width:22px;aspect-ratio:1;flex:0 0 22px;padding:0;margin:0;-webkit-appearance:none;appearance:none;border-radius:50%;border:2px solid transparent;box-shadow:inset 0 0 0 2px var(--ct-surface)}
+.swatches button[aria-pressed="true"]{border-color:var(--ct-fg)}
+.row-actions{display:flex;gap:8px;justify-content:flex-end}
+.btn{border:1px solid var(--ct-field-border);background:var(--ct-surface);color:var(--ct-fg);border-radius:3px;padding:6px 12px}
+.btn.primary{background:var(--ct-accent);border-color:var(--ct-accent);color:var(--ct-accent-fg)}
+.btn.danger{background:var(--ct-stop);border-color:var(--ct-stop);color:var(--ct-stop-fg)}
+
+.notice{background:var(--ct-warn-bg);color:var(--ct-warn-fg);border-radius:4px;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.notice span{flex:1;min-width:200px}
+
+/* List */
+.week{display:flex;justify-content:space-between;align-items:baseline;color:var(--ct-muted);font-size:13px;padding:0 2px}
+.week b{color:var(--ct-fg);font:500 15px var(--ct-mono)}
+.day{background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:4px}
+.dayhead{border-radius:4px 4px 0 0;display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--ct-surface-2);border-bottom:1px solid var(--ct-line);color:var(--ct-muted);font-size:13px}
+.dayhead b{color:var(--ct-fg);font:500 14px var(--ct-mono);margin-left:6px}
+.entry{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;align-items:center;gap:6px 14px;padding:6px 8px 6px 14px;border-bottom:1px solid var(--ct-line)}
+.entry:last-child{border-bottom:0}
+.entry.running{background:color-mix(in srgb,var(--ct-accent) 7%,var(--ct-surface))}
+.desc{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.desc .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.desc .parent{color:var(--ct-muted)}
+.proj{font-size:13px;white-space:nowrap}
+.dur-in{width:76px;text-align:right;border:1px solid transparent;background:transparent;border-radius:3px;padding:5px 6px;font:500 14px var(--ct-mono)}
+.dur-in:hover{border-color:var(--ct-line)}
+.dur-in:focus{border-color:var(--ct-accent);background:var(--ct-field-bg);outline:none}
+.dur-in:disabled{color:var(--ct-accent);border-color:transparent}
+.menu{position:relative}
+.range{display:flex;align-items:center;gap:2px;color:var(--ct-muted)}
+.tm{width:auto;border:1px solid transparent;background:transparent;border-radius:3px;padding:4px 2px;font:400 13px var(--ct-mono);color:var(--ct-fg)}
+.tm:hover{border-color:var(--ct-line)}
+.tm:focus{border-color:var(--ct-accent);background:var(--ct-field-bg);outline:none}
+.tm::-webkit-calendar-picker-indicator{display:none}
+.nolabel.over{color:var(--ct-stop)}
+.nolabel{font-size:12px;color:var(--ct-muted);font-style:italic;padding-right:6px}
+.live{font:500 12px var(--ct-font);color:var(--ct-accent);padding:0 4px}
+.manual .dash,.manual .or{color:var(--ct-muted);font-size:12px}
+.manual input[type=time]{font-family:var(--ct-mono)}
+.menu-list{position:absolute;right:0;top:100%;background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:4px;box-shadow:0 8px 24px var(--ct-shadow);z-index:15;min-width:150px;padding:4px 0}
+.menu-list button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 14px}
+.menu-list button:hover{background:var(--ct-hover)}
+.menu-list button.del{color:var(--ct-stop)}
+.desc.inline{position:relative;flex-wrap:nowrap}
+.desc.inline input{flex:1;min-width:0;border:1px solid var(--ct-accent);background:var(--ct-field-bg);color:var(--ct-fg);border-radius:3px;padding:6px 8px}
+.desc.inline .dd{min-width:min(420px,80vw)}
+.edit{grid-column:1/-1;display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:8px 0 6px}
+.edit label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ct-muted)}
+.edit input,.edit select{border:1px solid var(--ct-field-border);background:var(--ct-field-bg);border-radius:3px;padding:6px 8px;color:var(--ct-fg);max-width:100%}
+.edit .grow{flex:1 1 220px;min-width:0}
+.edit .grow select{width:100%}
+.confirm{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;font-size:13px}
+.confirm span{flex:1;min-width:180px}
+.more{align-self:center}
+.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ct-fg);color:var(--ct-surface);padding:9px 16px;border-radius:4px;font-size:13px;z-index:50}
+.empty{padding:14px;color:var(--ct-muted)}
+
+/* Compact view: follows the width of the plugin area, not the window */
+@container ct (max-width:680px){
+  .search{flex:1 1 100%}
+  .search input{padding:11px 12px;font-size:14px}
+  .ctrl{flex:1 1 100%;border-top:1px solid var(--ct-line)}
+  .timer,.manual{border-left:0;flex:1 1 auto}
+  .timer{justify-content:flex-end;padding:6px 10px}
+  .clock{min-width:0}
+  .go{width:84px;padding:8px 0}
+  .seg{padding:0 6px}
+  .manual{padding:8px 10px;gap:6px}
+  .manual input{padding:6px}
+  .entry{grid-template-columns:minmax(0,1fr) auto auto auto;gap:4px 10px;padding:6px 6px 6px 10px}
+  .entry .desc{grid-column:1/-1}
+  .entry .range{grid-column:1}
+  .dayhead{padding:8px 10px}
+}
+@container ct (max-width:440px){
+  .manual .m-date{flex:1 1 100%}
+  .manual .or{display:none}
+  .manual input.dur{width:64px}
+  .manual #mAdd{flex:1 1 auto;width:auto;padding:8px 12px}
+  .week{font-size:12px}
+}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.go:disabled,.btn:disabled{opacity:.6;cursor:default}
+input::placeholder{color:var(--ct-muted);opacity:1}
+.search input{color:var(--ct-fg)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar" id="bar">
+    <div class="search">
+      <input id="q" type="text" autocomplete="off" placeholder="" aria-label="" data-i18n-ph="SEARCH.PLACEHOLDER" data-i18n-aria="SEARCH.ARIA">
+      <span id="selProj"></span>
+      <button class="iconbtn" id="newProjBtn" data-i18n-title="PROJECT.NEW" data-i18n-aria="PROJECT.NEW">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M12 10v6M9 13h6"/></svg>
+      </button>
+      <div class="dd" id="dd" hidden></div>
+    </div>
+    <div class="ctrl">
+    <div class="timer" id="timerBox">
+      <span class="clock num" id="clock">0:00:00</span>
+      <button class="go" id="go"></button>
+    </div>
+    <div class="manual" id="manualBox" hidden>
+      <input type="date" id="mDate" class="m-date" data-i18n-aria="MANUAL.DATE">
+      <input type="time" id="mFrom" data-i18n-aria="MANUAL.FROM" data-i18n-title="MANUAL.FROM">
+      <span class="dash">–</span>
+      <input type="time" id="mTo" data-i18n-aria="MANUAL.TO" data-i18n-title="MANUAL.TO">
+      <span class="or" data-i18n="MANUAL.OR"></span>
+      <input type="text" id="mDur" class="dur" placeholder="1:30" data-i18n-aria="MANUAL.DURATION" data-i18n-title="MANUAL.DURATION_ONLY">
+      <button class="go" id="mAdd" data-i18n="MANUAL.BOOK"></button>
+    </div>
+    <div class="seg">
+      <button class="iconbtn" id="modeTimer" aria-pressed="true" data-i18n-title="TIMER.MODE_TIMER" data-i18n-aria="TIMER.MODE_TIMER_ARIA">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg>
+      </button>
+      <button class="iconbtn" id="modeManual" aria-pressed="false" data-i18n-title="TIMER.MODE_MANUAL" data-i18n-aria="TIMER.MODE_MANUAL_ARIA">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </button>
+    </div>
+    </div>
+    <div class="pop" id="pop" hidden>
+      <label for="pName" data-i18n="PROJECT.NEW"></label>
+      <input type="text" id="pName" data-i18n-ph="PROJECT.NAME_PLACEHOLDER">
+      <div class="swatches" id="sw"></div>
+      <div class="row-actions"><button class="btn" id="pCancel" data-i18n="LIST.CANCEL"></button><button class="btn primary" id="pOk" data-i18n="LIST.CREATE"></button></div>
+    </div>
+  </div>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <div class="week"><span data-i18n="LIST.THIS_WEEK"></span><span><span data-i18n="LIST.TOTAL"></span> <b class="num" id="weekTotal"></b></span></div>
+  <div id="list" style="display:flex;flex-direction:column;gap:14px"></div>
+  <button class="btn more" id="more" data-i18n="LIST.LOAD_MORE"></button>
+  <div class="status" data-i18n="INFO.STORAGE"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const API=window.PluginAPI;
+const H=3600000,M=60000,REST_MIN=60000;
+const $=id=>document.getElementById(id);
+// ---------- Language (texts from i18n/*.json, embedded by build.py) ----------
+/*I18N-START*/const I18N={"en":{"PLUGIN":{"NAME":"Compact Time Tracker","DESCRIPTION":"Compact time tracking: search a task, start/stop, chronological list with corrections."},"SEARCH":{"PLACEHOLDER":"What are you working on? Search task or project …","ARIA":"Search task or project","PROJECTS":"Projects","SHOW_TASKS":"Show tasks","ONLY_PROJECT":"Only {{project}}","CLEAR_FILTER":"Clear filter ×","DONE":"done","NO_RESULTS":"No results.","CREATE_IN":"+ Create task “{{title}}” in","CREATE_HINT":"· choose a project, Enter = first","CLEAR_SELECTION":"Clear selection","EDIT_ARIA":"Search task"},"PROJECT":{"NEW":"New project","NAME_PLACEHOLDER":"Project name","COLOR":"Colour {{color}}","NONE":"No project","CREATED":"Project “{{name}}” created","CREATE_FAILED":"Could not create project: {{error}}"},"TASK":{"DELETED":"(deleted task)","CREATED_IN":"Task created in {{project}}","CREATE_FAILED":"Could not create task: {{error}}","IS_DONE":"“{{title}}” is done. Reopen it to track time on it?","REOPEN":"Reopen","REOPENED":"Task reopened","SELECT_FIRST":"Select a task first"},"TIMER":{"START":"Start","STOP":"Stop","MODE_TIMER":"Timer","MODE_TIMER_ARIA":"Timer mode","MODE_MANUAL":"Manual","MODE_MANUAL_ARIA":"Manual mode","START_FAILED":"Could not start: {{error}}","STOP_FAILED":"Could not stop: {{error}}","STOP_NOT_APPLIED":"Super Productivity did not apply the stop"},"MANUAL":{"DATE":"Date","FROM":"From","TO":"To","OR":"or","DURATION":"Duration","DURATION_ONLY":"Duration only, no time of day","BOOK":"Add","BOOKED_RANGE":"{{from}}–{{to}} added to “{{title}}”","BOOKED_DURATION":"{{duration}} added to “{{title}}” (no time of day)","NEED_INPUT":"Enter From and To, or a duration such as 1:30, 90m, 1.5h"},"LIST":{"THIS_WEEK":"This week","TOTAL":"Total","TODAY":"Today","YESTERDAY":"Yesterday","EMPTY":"No time tracked in this period. Choose a task above and start the timer.","LOAD_MORE":"Load 7 more days","NO_TIME":"no time of day","NO_TIME_TOOLTIP":"Tracked time without an entry: added as a duration, tracked in Super Productivity itself, before version 2.0 or without the plugin active","RUNNING":"running","RUNNING_LOCKED":"Running, correct it after stopping","CONTINUE":"Continue","IS_RUNNING":"Running","MORE_ACTIONS":"More actions","EDIT":"Edit / move","DELETE":"Delete","CANCEL":"Cancel","SAVE":"Save","CREATE":"Create","CONFIRM_DELETE":"Delete {{what}} on {{day}} from “{{title}}”?","WITHOUT_TIME":"{{duration}} without time of day","DELETED":"Entry deleted","SAVED":"Saved","DURATION_FIXED":"Duration corrected","TIME_FIXED":"Time corrected","OVER":"entries > tracked","OVER_TOOLTIP":"The entries are longer than the tracked time (timeSpentOnDay), e.g. after a change in Super Productivity or on another device. The tracked time is authoritative; adjust or delete an entry."},"ERROR":{"GENERIC":"Error: {{error}}","LOAD":"Could not load data: {{error}}","DURATION":"Duration not recognised, e.g. 1:30, 90m or 1.5h","RANGE_ORDER":"“To” must be after “From”","RANGE_MISSING":"Enter From and To","TASK_NOT_FOUND":"Task not found"},"INFO":{"STORAGE":"The time per day (timeSpentOnDay) is authoritative. From–to entries are stored and synced in addition."}},"de":{"PLUGIN":{"NAME":"Kompakt-Zeiterfassung","DESCRIPTION":"Kompakte Zeiterfassung: Aufgabe suchen, Start/Stopp, chronologische Liste mit Korrektur."},"SEARCH":{"PLACEHOLDER":"Woran arbeitest du? Aufgabe oder Projekt suchen …","ARIA":"Aufgabe oder Projekt suchen","PROJECTS":"Projekte","SHOW_TASKS":"Aufgaben anzeigen","ONLY_PROJECT":"Nur {{project}}","CLEAR_FILTER":"Filter aufheben ×","DONE":"erledigt","NO_RESULTS":"Keine Treffer.","CREATE_IN":"+ Neue Aufgabe „{{title}}“ anlegen in","CREATE_HINT":"· Projekt wählen, Enter = erstes","CLEAR_SELECTION":"Auswahl aufheben","EDIT_ARIA":"Aufgabe suchen"},"PROJECT":{"NEW":"Neues Projekt","NAME_PLACEHOLDER":"Projektname","COLOR":"Farbe {{color}}","NONE":"Ohne Projekt","CREATED":"Projekt „{{name}}“ angelegt","CREATE_FAILED":"Projekt konnte nicht angelegt werden: {{error}}"},"TASK":{"DELETED":"(gelöschte Aufgabe)","CREATED_IN":"Aufgabe angelegt in {{project}}","CREATE_FAILED":"Aufgabe konnte nicht angelegt werden: {{error}}","IS_DONE":"„{{title}}“ ist erledigt. Wieder öffnen, um darauf zu buchen?","REOPEN":"Wieder öffnen","REOPENED":"Aufgabe wieder geöffnet","SELECT_FIRST":"Erst eine Aufgabe wählen"},"TIMER":{"START":"Start","STOP":"Stopp","MODE_TIMER":"Timer","MODE_TIMER_ARIA":"Timer-Modus","MODE_MANUAL":"Manuell","MODE_MANUAL_ARIA":"Manueller Modus","START_FAILED":"Start nicht möglich: {{error}}","STOP_FAILED":"Stopp nicht möglich: {{error}}","STOP_NOT_APPLIED":"Stopp wurde von Super Productivity nicht übernommen"},"MANUAL":{"DATE":"Datum","FROM":"Von","TO":"Bis","OR":"oder","DURATION":"Dauer","DURATION_ONLY":"Nur Dauer, ohne Uhrzeit","BOOK":"Buchen","BOOKED_RANGE":"{{from}}–{{to}} auf „{{title}}“ gebucht","BOOKED_DURATION":"{{duration}} auf „{{title}}“ gebucht (ohne Uhrzeit)","NEED_INPUT":"Von und Bis angeben oder eine Dauer wie 1:30, 90m, 1,5h"},"LIST":{"THIS_WEEK":"Diese Woche","TOTAL":"Gesamt","TODAY":"Heute","YESTERDAY":"Gestern","EMPTY":"In diesem Zeitraum wurde keine Zeit gebucht. Wähle oben eine Aufgabe und starte den Timer.","LOAD_MORE":"Weitere 7 Tage laden","NO_TIME":"ohne Uhrzeit","NO_TIME_TOOLTIP":"Gebuchte Zeit ohne Abschnitt: manuell als Dauer gebucht, in Super Productivity selbst erfasst, vor Version 2.0 oder ohne aktives Plugin","RUNNING":"läuft","RUNNING_LOCKED":"Läuft gerade, Korrektur nach dem Stoppen","CONTINUE":"Fortsetzen","IS_RUNNING":"Läuft","MORE_ACTIONS":"Weitere Aktionen","EDIT":"Bearbeiten / umbuchen","DELETE":"Löschen","CANCEL":"Abbrechen","SAVE":"Speichern","CREATE":"Anlegen","CONFIRM_DELETE":"{{what}} vom {{day}} bei „{{title}}“ löschen?","WITHOUT_TIME":"{{duration}} ohne Uhrzeit","DELETED":"Eintrag gelöscht","SAVED":"Gespeichert","DURATION_FIXED":"Dauer korrigiert","TIME_FIXED":"Zeit korrigiert","OVER":"Abschnitte > gebucht","OVER_TOOLTIP":"Die Abschnitte sind länger als die gebuchte Zeit (timeSpentOnDay), z. B. nach einer Änderung in Super Productivity oder auf einem anderen Gerät. Maßgeblich ist die gebuchte Zeit; Abschnitt anpassen oder löschen."},"ERROR":{"GENERIC":"Fehler: {{error}}","LOAD":"Daten konnten nicht geladen werden: {{error}}","DURATION":"Dauer nicht erkannt, z. B. 1:30, 90m oder 1,5h","RANGE_ORDER":"„Bis“ muss nach „Von“ liegen","RANGE_MISSING":"Von und Bis angeben","TASK_NOT_FOUND":"Aufgabe nicht gefunden"},"INFO":{"STORAGE":"Maßgeblich ist die Zeit je Tag (timeSpentOnDay). Von–Bis-Abschnitte werden zusätzlich gespeichert und synchronisiert."}}};/*I18N-END*/
+let lang='en';
+function pickLang(code){const c=String(code||'').toLowerCase();return I18N[c]?c:(I18N[c.split('-')[0]]?c.split('-')[0]:'en')}
+function lookup(d,key){return key.split('.').reduce((o,k)=>o&&o[k],d)}
+function tr(key,params){let v=lookup(I18N[lang],key);if(typeof v!=='string')v=lookup(I18N.en,key);if(typeof v!=='string')return key;
+  return params?v.replace(/\{\{\s*(\w+)\s*\}\}/g,(m,k)=>params[k]!=null?String(params[k]):m):v}
+function applyI18n(){
+  document.documentElement.lang=lang;document.title=tr('PLUGIN.NAME');
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>el.placeholder=tr(el.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=tr(el.dataset.i18nTitle));
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',tr(el.dataset.i18nAria)));
+}
+async function initLang(code){
+  if(code==null){try{code=await API.getCurrentLanguage()}catch(e){code=navigator.language}}
+  lang=pickLang(code);applyI18n();
+}
+
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------- State ----------
+let tasks=[],projects=[],fetchedAt=0,ctx={todayStr:null,startOfNextDayDiffMs:0};
+let segs=[],localCur=null; // segs: [{key,id,taskId,start,end,seen,base,day}]; localCur: {taskId,since} from the hook, null = unknown/stopped
+let localCurKnown=false;
+let selTaskId=null,eTaskId=null,days=7,openMenu=null,editKey=null,confirmKey=null,listDirty=false;
+
+// ---------- Entries (persistDataSynced, one key per day and session) ----------
+const SEG_PREFIX='seg-',STALE_MS=150000;
+const EDIT_SESSION='e'+Date.now().toString(36).slice(-5)+Math.random().toString(36).slice(2,5);
+const keyDay=k=>k.slice(SEG_PREFIX.length,SEG_PREFIX.length+10);
+function parseSegs(str){try{const o=JSON.parse(str||'');return o&&Array.isArray(o.segs)?o:{v:1,segs:[]}}catch(e){return{v:1,segs:[]}}}
+async function loadSegs(){
+  const from=addDays(today(),-(days-1));
+  const keys=(await API.listSyncedDataKeys(SEG_PREFIX)).filter(k=>keyDay(k)>=from);
+  const all=await Promise.all(keys.map(async k=>parseSegs(await API.loadSyncedData(k)).segs.map(x=>({...x,key:k,day:keyDay(k)}))));
+  segs=all.flat();
+}
+// Read fresh, modify, write (an empty key is cleared)
+async function modifyKey(key,fn){
+  const data=parseSegs(await API.loadSyncedData(key));fn(data);
+  await API.persistDataSynced(data.segs.length?JSON.stringify(data):'',key);
+}
+const plain=x=>({id:x.id,taskId:x.taskId,start:x.start,end:x.end,seen:x.seen,base:x.base});
+async function segAdd(taskId,start,end,day){
+  const seg={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),taskId,start,end,seen:end,base:null};
+  await modifyKey(SEG_PREFIX+day+'-'+EDIT_SESSION,d=>d.segs.push(seg));
+}
+async function segUpdate(seg,patch,newDay){
+  const next={...plain(seg),...patch};
+  if(newDay&&newDay!==seg.day){
+    await modifyKey(SEG_PREFIX+newDay+'-'+EDIT_SESSION,d=>d.segs.push(next));
+    await modifyKey(seg.key,d=>{d.segs=d.segs.filter(x=>x.id!==seg.id)});
+  }else await modifyKey(seg.key,d=>{const i=d.segs.findIndex(x=>x.id===seg.id);if(i>=0)d.segs[i]=next});
+}
+async function segRemove(seg){await modifyKey(seg.key,d=>{d.segs=d.segs.filter(x=>x.id!==seg.id)})}
+
+// ---------- Date/time (logical day according to "start of next day") ----------
+const pad=n=>String(n).padStart(2,'0');
+const localDay=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const offset=()=>ctx.startOfNextDayDiffMs||0;
+const dayOf=ts=>localDay(ts-offset());
+const today=()=>dayOf(Date.now());
+const addDays=(day,n)=>{const d=new Date(day+'T12:00:00');d.setDate(d.getDate()+n);return localDay(d)};
+const hhmm=ts=>{const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())};
+function tsFor(day,hm){const [h,m]=hm.split(':').map(Number);const d=new Date(day+'T00:00:00');
+  if(h*H+m*M<offset())d.setDate(d.getDate()+1);d.setHours(h,m,0,0);return d.getTime()}
+const fmtHM=ms=>{const m=Math.round(Math.max(0,ms)/M);return Math.floor(m/60)+':'+pad(m%60)};
+const fmtHMS=ms=>{const s=Math.floor(Math.max(0,ms)/1000);return Math.floor(s/3600)+':'+pad(Math.floor(s/60)%60)+':'+pad(s%60)};
+function parseDur(s){
+  s=String(s).trim().toLowerCase().replace(',','.');let m;
+  if(m=s.match(/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/))return (+m[1])*H+(+m[2])*M+(+(m[3]||0))*1000;
+  if(m=s.match(/^(\d+(?:\.\d+)?)\s*h$/))return Math.round(+m[1]*H);
+  if(m=s.match(/^(\d+)\s*h\s*(\d+)\s*m?$/))return (+m[1])*H+(+m[2])*M;
+  if(m=s.match(/^(\d+)\s*m?$/))return (+m[1])*M;
+  return null;
+}
+const dayLabel=d=>{if(d===today())return tr('LIST.TODAY');if(d===addDays(today(),-1))return tr('LIST.YESTERDAY');
+  return new Date(d+'T12:00:00').toLocaleDateString(lang,{weekday:'short',day:'numeric',month:'short'})};
+function weekStart(){const t=today(),d=new Date(t+'T12:00:00');return addDays(t,-((d.getDay()+6)%7))}
+
+// ---------- Data access ----------
+const proj=id=>projects.find(p=>p.id===id)||{id:null,title:tr('PROJECT.NONE'),theme:{primary:'#9e9e9e'}};
+const task=id=>tasks.find(t=>t.id===id);
+const color=p=>(p.theme&&p.theme.primary)||'#9e9e9e';
+const isTrackable=t=>!(t.subTaskIds&&t.subTaskIds.length);
+function taskLabel(t){if(!t)return tr('TASK.DELETED');const p=t.parentId&&task(t.parentId);return p?p.title+' › '+t.title:t.title}
+// Is an entry running? Per this device's hook, otherwise per a recent checkpoint in storage
+const isLive=x=>x.end==null&&Date.now()-(x.seen||x.start)<=STALE_MS;
+function curSeg(){
+  if(localCurKnown){if(!localCur)return null;
+    return segs.filter(x=>x.end==null&&x.taskId===localCur.taskId).sort((a,b)=>b.start-a.start)[0]||null}
+  return segs.filter(isLive).sort((a,b)=>b.start-a.start)[0]||null;
+}
+function runningTaskId(){const x=curSeg();return x?x.taskId:(localCurKnown&&localCur?localCur.taskId:null)}
+function runningSince(){const x=curSeg();return x?x.start:(localCur?localCur.since:0)}
+// Open entries without a recent checkpoint end at their last checkpoint
+const segEnd=x=>x.end!=null?x.end:(x===curSeg()?Date.now():Math.max(x.start,x.seen||x.start));
+const segMs=x=>segEnd(x)-x.start;
+// timeSpentOnDay including the time running since the last load
+function tsod(t,d){let v=(t.timeSpentOnDay||{})[d]||0;
+  if(t.id===runningTaskId()&&d===today())v+=Math.max(0,Date.now()-Math.max(fetchedAt,runningSince()||fetchedAt));return v}
+
+async function load(){
+  try{
+    const [ts,ps]=await Promise.all([API.getTasks(),API.getAllProjects()]);
+    tasks=ts||[];projects=(ps||[]).filter(p=>!p.isArchived);fetchedAt=Date.now();
+    if(API.getDayContext){try{const c=await API.getDayContext();if(c)ctx=c}catch(e){}}
+    await loadSegs();
+  }catch(e){toast(tr('ERROR.LOAD',{error:e.message||e}))}
+  renderSel();renderTimer();renderList();
+}
+let loadT=null;const loadSoon=()=>{clearTimeout(loadT);loadT=setTimeout(load,250)};
+
+// Changes timeSpentOnDay[day] by delta (read fresh so nothing gets overwritten)
+async function addTime(taskId,day,delta){
+  if(!delta)return;
+  const fresh=(await API.getTasks()).find(x=>x.id===taskId);if(!fresh)throw new Error(tr('ERROR.TASK_NOT_FOUND'));
+  const map={...(fresh.timeSpentOnDay||{})};const v=Math.max(0,(map[day]||0)+delta);
+  if(v>0)map[day]=v;else delete map[day];
+  await API.updateTask(taskId,{timeSpentOnDay:map});
+}
+async function run(fn,okMsg){try{await fn();if(okMsg)toast(okMsg)}catch(e){toast(tr('ERROR.GENERIC',{error:e&&e.message||e}))}finally{editKey=confirmKey=null;await load()}}
+
+// ---------- Notices ----------
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+function notice(html,actions){const n=$('notice');if(!html){n.hidden=true;return}
+  n.innerHTML='<span>'+html+'</span>';actions.forEach(([l,cls,fn])=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=l;b.onclick=()=>{notice(null);fn&&fn()};n.appendChild(b)});n.hidden=false}
+
+// ---------- Search (header and moving entries) ----------
+function makeSearch(cfg){
+  const st={filter:null,hl:0,opts:[]};
+  const render=()=>{
+    const raw=cfg.input.value.trim(),qq=cfg.input.value===cfg.input.dataset.label?'':raw.toLowerCase(),dd=cfg.dd;
+    const pm=projects.filter(p=>!st.filter&&qq&&p.title.toLowerCase().includes(qq));
+    const tm=tasks.filter(isTrackable).filter(t=>(!st.filter||t.projectId===st.filter)&&(!qq||taskLabel(t).toLowerCase().includes(qq)||proj(t.projectId).title.toLowerCase().includes(qq)));
+    tm.sort((a,b)=>(a.isDone-b.isDone)||((b.updated||b.created||0)-(a.updated||a.created||0)));
+    st.opts=[];let h='';
+    if(st.filter){const p=proj(st.filter);h+=`<div class="opt-clear" data-clear="1"><span class="dot" style="background:${esc(color(p))}"></span><span class="t">${esc(tr('SEARCH.ONLY_PROJECT',{project:p.title}))}</span><span class="meta">${esc(tr('SEARCH.CLEAR_FILTER'))}</span></div>`}
+    if(pm.length){h+='<h4>'+esc(tr('SEARCH.PROJECTS'))+'</h4>';pm.forEach(p=>{st.opts.push({k:'p',id:p.id});h+=`<div class="opt" data-i="${st.opts.length-1}"><span class="dot" style="background:${esc(color(p))}"></span><span class="t">${esc(p.title)}</span><span class="meta">${esc(tr('SEARCH.SHOW_TASKS'))}</span></div>`})}
+    const groups=new Map();tm.slice(0,300).forEach(t=>{const k=t.projectId||'';if(!groups.has(k))groups.set(k,[]);groups.get(k).push(t)});
+    groups.forEach((list,pid)=>{const p=proj(pid||null);h+=`<h4><span class="dot" style="background:${esc(color(p))};margin-right:6px"></span>${esc(p.title)}</h4>`;
+      list.forEach(x=>{st.opts.push({k:'t',id:x.id});h+=`<div class="opt sub${x.isDone?' done':''}" data-i="${st.opts.length-1}"><span class="t">${esc(taskLabel(x))}</span>${x.isDone?'<span class="meta">'+esc(tr('SEARCH.DONE'))+'</span>':''}</div>`})});
+    if(qq){const pp=parseProj(raw);
+      if(pp.title){h+=`<div class="create-head">${esc(tr('SEARCH.CREATE_IN',{title:pp.title}))} <span class="hint">${esc(tr('SEARCH.CREATE_HINT'))}</span></div><div class="create-row">`;
+        projectOrder(pp.pid||st.filter).forEach(p=>{st.opts.push({k:'new',pid:p.id,title:pp.title});
+          h+=`<div class="opt pchip" data-i="${st.opts.length-1}"><span class="dot" style="background:${esc(color(p))}"></span>${esc(p.title)}</div>`});
+        h+='</div>'}}
+    if(!st.opts.length)h='<div class="empty">'+esc(tr('SEARCH.NO_RESULTS'))+'</div>';
+    dd.innerHTML=h;st.hl=Math.max(0,Math.min(st.hl,st.opts.length-1));mark();dd.hidden=false;
+  };
+  const mark=()=>cfg.dd.querySelectorAll('.opt').forEach(o=>o.classList.toggle('hl',+o.dataset.i===st.hl));
+  const pick=async i=>{const o=st.opts[i];if(!o)return;
+    if(o.k==='p'||o.k==='clear'){st.filter=o.k==='p'?o.id:null;cfg.input.value='';cfg.onFilter&&cfg.onFilter();render();cfg.input.focus();return}
+    if(o.k==='new'){cfg.dd.hidden=true;const id=await createTask(o.title,o.pid);st.filter=null;if(id)cfg.onTask(id);return}
+    st.filter=null;cfg.dd.hidden=true;cfg.onTask(o.id)};
+  // Header opens on focus; when moving an entry only on click or input (openOnFocus:false)
+  cfg.input.addEventListener('focus',()=>{cfg.input.select();if(cfg.openOnFocus!==false)render()});
+  cfg.input.addEventListener('click',()=>{if(cfg.dd.hidden)render()});
+  cfg.input.addEventListener('input',()=>{st.hl=0;cfg.onInput&&cfg.onInput();render()});
+  cfg.input.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){if(cfg.dd.hidden){render();e.preventDefault();return}st.hl=Math.min(st.hl+1,st.opts.length-1);mark();e.preventDefault()}
+    else if(e.key==='ArrowUp'){st.hl=Math.max(st.hl-1,0);mark();e.preventDefault()}
+    else if(e.key==='Enter'){if(!cfg.dd.hidden){pick(st.hl);e.preventDefault()}}
+    else if(e.key==='Escape'){cfg.dd.hidden=true}
+    else if(e.key==='Backspace'&&!cfg.input.value&&st.filter){st.filter=null;cfg.onFilter&&cfg.onFilter();render()}
+  });
+  cfg.dd.addEventListener('mousedown',e=>{
+    if(e.target.closest('[data-clear]')){e.preventDefault();st.filter=null;cfg.onFilter&&cfg.onFilter();render();return}
+    const o=e.target.closest('.opt');if(o){e.preventDefault();pick(+o.dataset.i)}});
+  return st;
+}
+// Preselect "+project" from the text (prefix of the project name, spaces ignored) and remove it from the title
+function parseProj(raw){
+  const m=raw.match(/(^|\s)\+(\S+)/);if(!m)return{title:raw,pid:null};
+  const key=m[2].toLowerCase(),p=projects.find(p=>p.title.toLowerCase().replace(/\s/g,'').startsWith(key));
+  return p?{title:raw.replace(m[0],' ').replace(/\s+/g,' ').trim(),pid:p.id}:{title:raw,pid:null};
+}
+// Order of project chips: preselection, most recently tracked projects, the rest alphabetically
+function projectOrder(first){
+  const last={};tasks.forEach(t=>Object.keys(t.timeSpentOnDay||{}).forEach(d=>{const k=t.projectId;if(k&&(!last[k]||d>last[k]))last[k]=d}));
+  return [...projects].sort((a,b)=>((b.id===first)-(a.id===first))||(last[b.id]||'').localeCompare(last[a.id]||'')||a.title.localeCompare(b.title,'de'));
+}
+// The project is passed explicitly and checked after creation (short syntax/default project could override it otherwise)
+async function createTask(title,pid){
+  try{
+    const id=await API.addTask({title,projectId:pid});await load();
+    let t=task(id);
+    if(t&&pid&&t.projectId!==pid&&!t.parentId){await API.updateTask(id,{projectId:pid});await load();t=task(id)}
+    toast(tr('TASK.CREATED_IN',{project:proj(t?t.projectId:pid).title}));return id;
+  }catch(e){toast(tr('TASK.CREATE_FAILED',{error:e.message||e}));return null}
+}
+const mainSearch=makeSearch({input:$('q'),dd:$('dd'),
+  onTask:id=>chooseTask(id),onFilter:()=>{selTaskId=null;renderSel()},onInput:()=>{selTaskId=null;renderSel()}});
+function withReopen(id,then){
+  const t=task(id);if(!t)return;
+  if(!t.isDone){then();return}
+  notice(esc(tr('TASK.IS_DONE',{title:taskLabel(t)})),[
+    [tr('TASK.REOPEN'),'primary',()=>run(async()=>{await API.updateTask(id,{isDone:false});then()},tr('TASK.REOPENED'))],[tr('LIST.CANCEL'),'',null]]);
+}
+function chooseTask(id){
+  $('dd').hidden=true;
+  withReopen(id,()=>{selTaskId=id;$('q').value=taskLabel(task(id));renderSel();if(runningTaskId()&&runningTaskId()!==id)startTask(id)});
+}
+function renderSel(){
+  const el=$('selProj'),t=selTaskId&&task(selTaskId),pid=t?t.projectId:mainSearch.filter;
+  if(!t&&!pid){el.innerHTML='';return}const p=proj(pid);
+  el.innerHTML=`<span class="chip sel-proj" style="background:color-mix(in srgb,${esc(color(p))} 15%,transparent)"><span class="dot" style="background:${esc(color(p))}"></span><span class="name">${esc(p.title)}</span><button aria-label="${esc(tr('SEARCH.CLEAR_SELECTION'))}">×</button></span>`;
+  el.querySelector('button').onclick=()=>{selTaskId=null;mainSearch.filter=null;$('q').value='';renderSel();$('q').focus()};
+}
+document.addEventListener('mousedown',e=>{
+  document.querySelectorAll('.dd').forEach(dd=>{if(!dd.parentElement.contains(e.target))dd.hidden=true});
+  if(!e.target.closest('.pop')&&!e.target.closest('#newProjBtn'))$('pop').hidden=true;
+  if(!e.target.closest('.menu')&&openMenu){openMenu=null;renderList()}});
+
+// ---------- Timer ----------
+async function startTask(id){
+  withReopen(id,async()=>{
+    try{
+      if(typeof API.startTracking==='function')await API.startTracking(id);else await API.dispatchAction({type:'[Task] SetCurrentTask',id});
+      selTaskId=id;$('q').value=taskLabel(task(id));renderSel();
+    }catch(e){toast(tr('TIMER.START_FAILED',{error:e.message||e}))}
+    setTimeout(load,400);
+  });
+}
+async function stopTask(){
+  try{if(typeof API.stopTracking==='function')await API.stopTracking();else await API.dispatchAction({type:'[Task] SetCurrentTask',id:null})}
+  catch(e){toast(tr('TIMER.STOP_FAILED',{error:e.message||e}))}
+  setTimeout(async()=>{await load();if(localCurKnown&&localCur)toast(tr('TIMER.STOP_NOT_APPLIED'))},600);
+}
+function renderTimer(){
+  const rid=runningTaskId(),run=!!rid;$('go').textContent=tr(run?'TIMER.STOP':'TIMER.START');$('go').classList.toggle('stop',run);
+  const s=curSeg();$('clock').textContent=run?fmtHMS(s?segMs(s):Date.now()-runningSince()):'0:00:00';
+  if(run&&!selTaskId&&task(rid)&&document.activeElement!==$('q')){selTaskId=rid;$('q').value=taskLabel(task(rid));renderSel()}
+}
+$('go').onclick=()=>{if(runningTaskId())return stopTask();if(!selTaskId){toast(tr('TASK.SELECT_FIRST'));$('q').focus();return}startTask(selTaskId)};
+
+// ---------- Mode / manual entry ----------
+function setMode(m){$('timerBox').hidden=m!=='timer';$('manualBox').hidden=m!=='manual';$('modeTimer').setAttribute('aria-pressed',m==='timer');$('modeManual').setAttribute('aria-pressed',m==='manual');if(m==='manual'&&!$('mDate').value)$('mDate').value=today()}
+$('modeTimer').onclick=()=>setMode('timer');$('modeManual').onclick=()=>setMode('manual');
+$('mAdd').onclick=()=>{
+  if(!selTaskId){toast(tr('TASK.SELECT_FIRST'));return}
+  const id=selTaskId,t=task(id),d=$('mDate').value||today(),f=$('mFrom').value,to=$('mTo').value;
+  if(f&&to){
+    const s=tsFor(d,f),e=tsFor(d,to);if(e<=s){toast(tr('ERROR.RANGE_ORDER'));return}
+    withReopen(id,()=>run(async()=>{await addTime(id,d,e-s);await segAdd(id,s,e,d);$('mFrom').value=$('mTo').value=''},tr('MANUAL.BOOKED_RANGE',{from:f,to,title:t.title})));return;
+  }
+  const ms=parseDur($('mDur').value);if(!ms){toast(tr('MANUAL.NEED_INPUT'));return}
+  withReopen(id,()=>run(async()=>{await addTime(id,d,ms);$('mDur').value=''},tr('MANUAL.BOOKED_DURATION',{duration:fmtHM(ms),title:t.title})));
+};
+
+// ---------- New project ----------
+const COLORS=['#3f9c6b','#c0632f','#8456c9','#2f8fc0','#c23f6a','#a08a1f','#4a5bd1','#5f6b7a'];let pColor=COLORS[0];
+$('sw').innerHTML=COLORS.map(c=>`<button style="background:${c}" data-c="${c}" aria-label="${esc(tr('PROJECT.COLOR',{color:c}))}" aria-pressed="${c===pColor}"></button>`).join('');
+$('sw').onclick=e=>{const b=e.target.closest('button');if(!b)return;pColor=b.dataset.c;$('sw').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))};
+$('newProjBtn').onclick=()=>{$('pop').hidden=!$('pop').hidden;if(!$('pop').hidden){$('pName').value=$('q').value.trim();$('pName').focus()}};
+$('pCancel').onclick=()=>$('pop').hidden=true;
+$('pOk').onclick=async()=>{const n=$('pName').value.trim();if(!n){$('pName').focus();return}
+  try{const id=await API.addProject({title:n,theme:{primary:pColor,isAutoContrast:true}});$('pop').hidden=true;await load();
+    mainSearch.filter=id;selTaskId=null;$('q').value='';renderSel();toast(tr('PROJECT.CREATED',{name:n}));$('q').focus()}
+  catch(e){toast(tr('PROJECT.CREATE_FAILED',{error:e.message||e}))}};
+$('pName').addEventListener('keydown',e=>{if(e.key==='Enter')$('pOk').click()});
+
+// ---------- List ----------
+function entries(){
+  const from=addDays(today(),-(days-1)),out={},segByTD={};
+  segs.forEach(s=>{if(s.day<from||!task(s.taskId))return;const ms=segMs(s);
+    (out[s.day]??=[]).push({kind:'seg',s,t:task(s.taskId),d:s.day,ms});const k=s.taskId+'|'+s.day;segByTD[k]=(segByTD[k]||0)+ms});
+  // Reconcile per task and day: timeSpentOnDay is authoritative.
+  // More tracked than entries → "no time of day" row; entries longer than tracked → warning row.
+  const pairs=new Set(Object.keys(segByTD));
+  tasks.forEach(t=>Object.keys(t.timeSpentOnDay||{}).forEach(d=>pairs.add(t.id+'|'+d)));
+  pairs.forEach(k=>{const [id,d]=k.split('|'),t=task(id);if(!t||d<from)return;
+    const diff=tsod(t,d)-(segByTD[k]||0);
+    if(diff>=REST_MIN)(out[d]??=[]).push({kind:'rest',t,d,ms:diff});
+    else if(-diff>=REST_MIN&&!(t.id===runningTaskId()&&d===today()))(out[d]??=[]).push({kind:'over',t,d,ms:-diff});
+  });
+  return Object.keys(out).sort().reverse().map(d=>({d,items:out[d].sort((a,b)=>
+    a.kind!==b.kind?(['seg','rest','over'].indexOf(a.kind)-['seg','rest','over'].indexOf(b.kind)):a.kind==='seg'?b.s.start-a.s.start:b.ms-a.ms)}));
+}
+function dayTotal(d){return tasks.reduce((a,t)=>a+tsod(t,d),0)}
+function updateTotals(){
+  const ws=weekStart();let w=0;tasks.forEach(t=>Object.keys(t.timeSpentOnDay||{}).forEach(d=>{if(d>=ws)w+=tsod(t,d)}));
+  $('weekTotal').textContent=fmtHM(w);
+  document.querySelectorAll('[data-daytotal]').forEach(el=>el.textContent=fmtHM(dayTotal(el.dataset.daytotal)));
+}
+const ICON_PLAY='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const ICON_MORE='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>';
+const keyOf=it=>it.kind==='seg'?'s|'+it.s.id:(it.kind==='over'?'o|':'r|')+it.t.id+'|'+it.d;
+let lastItems=new Map();
+function isInteracting(){const a=document.activeElement;return !!(editKey||confirmKey||(a&&$('list').contains(a)&&a.tagName==='INPUT'))}
+function renderList(force){
+  if(!force&&isInteracting()){listDirty=true;updateTotals();return}
+  listDirty=false;
+  const L=$('list'),groups=entries();lastItems=new Map();
+  if(!groups.length){L.innerHTML='<div class="day"><div class="empty">'+esc(tr('LIST.EMPTY'))+'</div></div>';updateTotals();return}
+  L.innerHTML=groups.map(g=>`<section class="day"><div class="dayhead"><span>${dayLabel(g.d)}</span><span>${esc(tr('LIST.TOTAL'))} <b class="num" data-daytotal="${g.d}"></b></span></div>`+
+    g.items.map(it=>{
+      const {t,d,ms}=it,key=keyOf(it),p=proj(t.projectId),c=esc(color(p));lastItems.set(key,it);
+      const run=it.kind==='seg'?it.s===curSeg():(t.id===runningTaskId()&&d===today()&&!curSeg());
+      const lockedRest=it.kind==='rest'&&t.id===runningTaskId()&&d===today();
+      const par=t.parentId&&task(t.parentId),editing=editKey===key;
+      const range=it.kind==='seg'
+        ?`<div class="range num"><input type="time" class="tm" data-f="start" value="${hhmm(it.s.start)}" aria-label="${esc(tr('MANUAL.FROM'))}" ${run?'disabled':''}>–${run?'<span class="live">'+esc(tr('LIST.RUNNING'))+'</span>':`<input type="time" class="tm" data-f="end" value="${hhmm(it.s.end)}" aria-label="${esc(tr('MANUAL.TO'))}">`}</div>`
+        :it.kind==='over'?`<div class="range"><span class="nolabel over" title="${esc(tr('LIST.OVER_TOOLTIP'))}">${esc(tr('LIST.OVER'))}</span></div>`
+        :`<div class="range"><span class="nolabel" title="${esc(tr('LIST.NO_TIME_TOOLTIP'))}">${esc(tr('LIST.NO_TIME'))}</span></div>`;
+      const over=it.kind==='over',lock=run||lockedRest||over;
+      let h=`<div class="entry${run?' running':''}" data-key="${esc(key)}">
+        ${editing?`<div class="desc inline"><input id="eQ" type="text" autocomplete="off" aria-label="${esc(tr('SEARCH.EDIT_ARIA'))}" value="${esc(taskLabel(task(eTaskId)))}" data-label="${esc(taskLabel(task(eTaskId)))}"><span class="chip proj" id="eProj"></span><div class="dd" id="eDD" hidden></div></div>`
+        :`<div class="desc"><span class="t" title="${esc(taskLabel(t))}">${par?`<span class="parent">${esc(par.title)} › </span>`:''}${esc(t.title)}</span>
+          <span class="chip proj" style="color:${c}"><span class="dot" style="background:${c}"></span>${esc(p.title)}</span></div>`}
+        ${range}
+        <input class="dur-in num" value="${over?'−'+fmtHM(ms):run?fmtHMS(ms):fmtHM(ms)}" ${lock?'disabled title="'+esc(tr(over?'LIST.OVER_TOOLTIP':'LIST.RUNNING_LOCKED'))+'"':''} aria-label="${esc(tr('MANUAL.DURATION'))}">
+        <button class="iconbtn play" data-act="play" title="${esc(tr(run?'LIST.IS_RUNNING':'LIST.CONTINUE'))}" aria-label="${esc(tr('LIST.CONTINUE'))}" ${run?'disabled':''}>${ICON_PLAY}</button>
+        <div class="menu"><button class="iconbtn" data-act="menu" aria-label="${esc(tr('LIST.MORE_ACTIONS'))}" ${lock?'disabled':''}>${ICON_MORE}</button>
+          ${openMenu===key?`<div class="menu-list"><button data-act="edit">${esc(tr('LIST.EDIT'))}</button><button data-act="ask-del" class="del">${esc(tr('LIST.DELETE'))}</button></div>`:''}</div>`;
+      if(editing){
+        h+=`<div class="edit"><label>${esc(tr('MANUAL.DATE'))}<input type="date" id="eDate" value="${d}"></label>`+
+          (it.kind==='seg'
+            ?`<label>${esc(tr('MANUAL.FROM'))}<input type="time" id="eFrom" value="${hhmm(it.s.start)}"></label><label>${esc(tr('MANUAL.TO'))}<input type="time" id="eTo" value="${hhmm(it.s.end)}"></label>`
+            :`<label>${esc(tr('MANUAL.DURATION'))}<input id="eDur" value="${fmtHM(ms)}" style="width:80px;font-family:var(--mono)"></label>`)+
+          `<span style="flex:1"></span><button class="btn" data-act="cancel">${esc(tr('LIST.CANCEL'))}</button><button class="btn primary" data-act="save">${esc(tr('LIST.SAVE'))}</button></div>`;
+      }
+      if(confirmKey===key)h+=`<div class="confirm"><span>${esc(tr('LIST.CONFIRM_DELETE',{what:it.kind==='seg'?hhmm(it.s.start)+'–'+hhmm(it.s.end)+' ('+fmtHM(ms)+')':tr('LIST.WITHOUT_TIME',{duration:fmtHM(ms)}),day:dayLabel(d),title:t.title}))}</span><button class="btn" data-act="cancel">${esc(tr('LIST.CANCEL'))}</button><button class="btn danger" data-act="del">${esc(tr('LIST.DELETE'))}</button></div>`;
+      return h+'</div>';
+    }).join('')+'</section>').join('');
+  if(editKey&&$('eQ'))attachEditSearch();
+  updateTotals();
+}
+function paintEProj(){const p=proj(task(eTaskId)&&task(eTaskId).projectId),c=color(p);$('eProj').style.color=c;$('eProj').innerHTML=`<span class="dot" style="background:${esc(c)}"></span>${esc(p.title)}`}
+function attachEditSearch(){
+  const inp=$('eQ');paintEProj();
+  makeSearch({input:inp,dd:$('eDD'),openOnFocus:false,onTask:id=>{eTaskId=id;inp.value=inp.dataset.label=taskLabel(task(id));paintEProj()}});
+}
+// Move/correct: subtract the old value, add the new one in timeSpentOnDay, then update the entry.
+async function rebook(it,ntId,nd,ms,newStart,newEnd){
+  if(ntId===it.t.id&&nd===it.d)await addTime(ntId,nd,ms-it.ms);
+  else{await addTime(it.t.id,it.d,-it.ms);await addTime(ntId,nd,ms)}
+  if(it.kind==='seg')await segUpdate(it.s,{taskId:ntId,start:newStart,end:newEnd,seen:newEnd},nd);
+}
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const key=b.closest('.entry').dataset.key,it=lastItems.get(key);if(!it)return;
+  switch(b.dataset.act){
+    case'play':startTask(it.t.id);break;
+    case'menu':openMenu=openMenu===key?null:key;renderList(true);break;
+    case'edit':openMenu=null;editKey=key;eTaskId=it.t.id;confirmKey=null;renderList(true);$('eQ').focus();break;
+    case'ask-del':openMenu=null;confirmKey=key;editKey=null;renderList(true);break;
+    case'cancel':editKey=confirmKey=null;renderList(true);break;
+    case'del':run(async()=>{await addTime(it.t.id,it.d,-it.ms);if(it.kind==='seg')await segRemove(it.s)},tr('LIST.DELETED'));break;
+    case'save':{
+      const nd=$('eDate').value||it.d,nt=eTaskId;
+      if(it.kind==='seg'){const f=$('eFrom').value,to=$('eTo').value;if(!f||!to){toast(tr('ERROR.RANGE_MISSING'));return}
+        const s=tsFor(nd,f),en=tsFor(nd,to);if(!(en>s)){toast(tr('ERROR.RANGE_ORDER'));return}
+        run(()=>rebook(it,nt,nd,en-s,s,en),tr('LIST.SAVED'))}
+      else{const ms=parseDur($('eDur').value);if(ms==null){toast(tr('ERROR.DURATION'));return}
+        run(()=>rebook(it,nt,nd,ms),tr('LIST.SAVED'))}
+      break;}
+  }
+});
+$('list').addEventListener('change',e=>{
+  const row=e.target.closest('.entry');if(!row||editKey)return;const it=lastItems.get(row.dataset.key);if(!it)return;
+  if(e.target.classList.contains('dur-in')){
+    const ms=parseDur(e.target.value);if(ms==null){toast(tr('ERROR.DURATION'));e.target.blur();renderList(true);return}
+    e.target.blur();
+    if(it.kind==='seg')run(()=>rebook(it,it.t.id,it.d,ms,it.s.start,it.s.start+ms),tr('LIST.DURATION_FIXED'));
+    else run(()=>rebook(it,it.t.id,it.d,ms),tr('LIST.DURATION_FIXED'));
+  }
+});
+// Apply times only when leaving the field (change fires during typing for type=time)
+$('list').addEventListener('focusout',e=>{
+  const el=e.target;if(!el.classList||!el.classList.contains('tm')||editKey)return;
+  const row=el.closest('.entry'),it=row&&lastItems.get(row.dataset.key);if(!it||it.kind!=='seg'||!el.value)return;
+  const orig=hhmm(el.dataset.f==='start'?it.s.start:it.s.end);if(el.value===orig)return;
+  let s=it.s.start,en=it.s.end;const v=tsFor(it.d,el.value);
+  if(el.dataset.f==='start')s=v;else en=v;
+  if(!(en>s)){toast(tr('ERROR.RANGE_ORDER'));renderList(true);return}
+  run(()=>rebook(it,it.t.id,it.d,en-s,s,en),tr('LIST.TIME_FIXED'));
+});
+$('list').addEventListener('keydown',e=>{if((e.target.classList.contains('dur-in')||e.target.classList.contains('tm'))&&e.key==='Enter')e.target.blur();if(e.key==='Escape'&&(editKey||confirmKey)){editKey=confirmKey=null;renderList(true)}});
+$('list').addEventListener('focusout',()=>setTimeout(()=>{if(listDirty&&!isInteracting())renderList()},0));
+$('more').onclick=()=>{days+=7;renderList(true)};
+
+// ---------- Theme ----------
+const THEME=[['--ct-surface',['--card-bg','--bg-lighter','--bg']],['--ct-fg',['--text-color']],['--ct-muted',['--text-color-muted','--text-color-less-intense']],
+  ['--ct-line',['--divider-color']],['--ct-accent',['--c-primary']],['--ct-stop',['--c-warn','--color-danger']],['--ct-warn',['--color-warning']],
+  ['--ct-accent-fg',['--button-primary-label']],['--ct-stop-fg',['--button-warn-label','--c-warn-contrast']],['--ct-hover',['--select-hover-bg']],
+  ['--ct-field-bg',['--input-bg']],['--ct-field-border',['--input-border-color']],['--ct-focus',['--focus-ring-color']],
+  ['--ct-font',['--font-primary-stack']],['--ct-mono',['--font-mono-stack']]];
+const probe=document.createElement('span');probe.style.display='none';
+function rgbOf(cssColor){probe.style.color='';probe.style.color=cssColor;if(!probe.style.color)return null;
+  if(!probe.isConnected)document.body.appendChild(probe);const m=getComputedStyle(probe).color.match(/[\d.]+/g);return m&&m.length>=3?m.slice(0,4).map(Number):null}
+const lum=c=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c[0])+.7152*f(c[1])+.0722*f(c[2])};
+let themeSig='';
+function applyTheme(){
+  const cs=getComputedStyle(document.documentElement),root=document.documentElement.style;let sig='';
+  THEME.forEach(([tok,srcs])=>{
+    const isFont=tok==='--ct-font'||tok==='--ct-mono';let v='';
+    for(const n of srcs){const x=cs.getPropertyValue(n).trim();if(!x)continue;
+      if(isFont){v=x;break}
+      const c=rgbOf(x);if(!c)continue;                       // invalid/empty value → next source
+      if(c.length===4&&c[3]===0)continue;                    // transparent → next source
+      v=x;break}
+    sig+=v+'|';if(v)root.setProperty(tok,v);else root.removeProperty(tok)});
+  if(sig===themeSig)return;themeSig=sig;
+  // Text colour on accent/warning surfaces if the theme provides none (older versions)
+  [['--ct-accent-fg','--ct-accent',['--button-primary-label']],['--ct-stop-fg','--ct-stop',['--button-warn-label','--c-warn-contrast']]].forEach(([tok,bgTok,srcs])=>{
+    if(srcs.some(n=>cs.getPropertyValue(n).trim()))return;const c=rgbOf(getComputedStyle(document.documentElement).getPropertyValue(bgTok).trim());
+    if(c)root.setProperty(tok,lum(c)>.45?'#111111':'#ffffff')});
+  // Native controls (date, time, scrollbars) in light/dark to match
+  const surf=rgbOf(getComputedStyle(document.documentElement).getPropertyValue('--ct-surface').trim());
+  const dark=cs.getPropertyValue('--is-dark-theme').trim()==='1'||(surf&&lum(surf)<.35)||(API.cfg&&API.cfg.theme==='dark'&&!surf);
+  root.colorScheme=dark?'dark':'light';
+}
+
+// ---------- Sync ----------
+function tick(){
+  {
+    renderTimer();
+    const row=document.querySelector('.entry.running .dur-in'),s=curSeg();
+    if(row)row.value=fmtHMS(s?segMs(s):tsod(task(runningTaskId())||{},today()));
+    updateTotals();
+  }
+}
+const H_=API.Hooks||{};
+const hook=(h,fn)=>{if(!h)return;try{Promise.resolve(API.registerHook(h,fn)).catch(()=>{})}catch(e){}};
+hook(H_.ANY_TASK_UPDATE,loadSoon);
+hook(H_.PROJECT_LIST_UPDATE,loadSoon);
+hook(H_.DAY_CHANGE,loadSoon);
+hook(H_.CURRENT_TASK_CHANGE,p=>{
+  localCurKnown=true;localCur=p&&p.current?{taskId:p.current.id,since:Date.now()}:null;renderTimer();setTimeout(load,300)});
+hook(H_.PERSISTED_DATA_CHANGED,loadSoon);
+applyTheme();
+setInterval(applyTheme,1500);
+setInterval(tick,1000);
+setInterval(load,20000);
+applyI18n();
+hook(H_.LANGUAGE_CHANGE,p=>{initLang(p&&(p.newLanguage||p.code)).then(()=>{document.querySelectorAll('.dd').forEach(d=>d.hidden=true);notice(null);renderSel();renderTimer();renderList(true)})});
+initLang().then(load);
+})();
+</script>
+</body>
+</html>

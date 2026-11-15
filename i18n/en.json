@@ -1,0 +1,99 @@
+{
+  "PLUGIN": {
+    "NAME": "Compact Time Tracker",
+    "DESCRIPTION": "Compact time tracking: search a task, start/stop, chronological list with corrections."
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "What are you working on? Search task or project …",
+    "ARIA": "Search task or project",
+    "PROJECTS": "Projects",
+    "SHOW_TASKS": "Show tasks",
+    "ONLY_PROJECT": "Only {{project}}",
+    "CLEAR_FILTER": "Clear filter ×",
+    "DONE": "done",
+    "NO_RESULTS": "No results.",
+    "CREATE_IN": "+ Create task “{{title}}” in",
+    "CREATE_HINT": "· choose a project, Enter = first",
+    "CLEAR_SELECTION": "Clear selection",
+    "EDIT_ARIA": "Search task"
+  },
+  "PROJECT": {
+    "NEW": "New project",
+    "NAME_PLACEHOLDER": "Project name",
+    "COLOR": "Colour {{color}}",
+    "NONE": "No project",
+    "CREATED": "Project “{{name}}” created",
+    "CREATE_FAILED": "Could not create project: {{error}}"
+  },
+  "TASK": {
+    "DELETED": "(deleted task)",
+    "CREATED_IN": "Task created in {{project}}",
+    "CREATE_FAILED": "Could not create task: {{error}}",
+    "IS_DONE": "“{{title}}” is done. Reopen it to track time on it?",
+    "REOPEN": "Reopen",
+    "REOPENED": "Task reopened",
+    "SELECT_FIRST": "Select a task first"
+  },
+  "TIMER": {
+    "START": "Start",
+    "STOP": "Stop",
+    "MODE_TIMER": "Timer",
+    "MODE_TIMER_ARIA": "Timer mode",
+    "MODE_MANUAL": "Manual",
+    "MODE_MANUAL_ARIA": "Manual mode",
+    "START_FAILED": "Could not start: {{error}}",
+    "STOP_FAILED": "Could not stop: {{error}}",
+    "STOP_NOT_APPLIED": "Super Productivity did not apply the stop"
+  },
+  "MANUAL": {
+    "DATE": "Date",
+    "FROM": "From",
+    "TO": "To",
+    "OR": "or",
+    "DURATION": "Duration",
+    "DURATION_ONLY": "Duration only, no time of day",
+    "BOOK": "Add",
+    "BOOKED_RANGE": "{{from}}–{{to}} added to “{{title}}”",
+    "BOOKED_DURATION": "{{duration}} added to “{{title}}” (no time of day)",
+    "NEED_INPUT": "Enter From and To, or a duration such as 1:30, 90m, 1.5h"
+  },
+  "LIST": {
+    "THIS_WEEK": "This week",
+    "TOTAL": "Total",
+    "TODAY": "Today",
+    "YESTERDAY": "Yesterday",
+    "EMPTY": "No time tracked in this period. Choose a task above and start the timer.",
+    "LOAD_MORE": "Load 7 more days",
+    "NO_TIME": "no time of day",
+    "NO_TIME_TOOLTIP": "Tracked time without an entry: added as a duration, tracked in Super Productivity itself, before version 2.0 or without the plugin active",
+    "RUNNING": "running",
+    "RUNNING_LOCKED": "Running, correct it after stopping",
+    "CONTINUE": "Continue",
+    "IS_RUNNING": "Running",
+    "MORE_ACTIONS": "More actions",
+    "EDIT": "Edit / move",
+    "DELETE": "Delete",
+    "CANCEL": "Cancel",
+    "SAVE": "Save",
+    "CREATE": "Create",
+    "CONFIRM_DELETE": "Delete {{what}} on {{day}} from “{{title}}”?",
+    "WITHOUT_TIME": "{{duration}} without time of day",
+    "DELETED": "Entry deleted",
+    "SAVED": "Saved",
+    "DURATION_FIXED": "Duration corrected",
+    "TIME_FIXED": "Time corrected",
+    "OVER": "entries > tracked",
+    "OVER_TOOLTIP": "The entries are longer than the tracked time (timeSpentOnDay), e.g. after a change in Super Productivity or on another device. The tracked time is authoritative; adjust or delete an entry."
+  },
+  "ERROR": {
+    "GENERIC": "Error: {{error}}",
+    "LOAD": "Could not load data: {{error}}",
+    "DURATION": "Duration not recognised, e.g. 1:30, 90m or 1.5h",
+    "RANGE_ORDER": "“To” must be after “From”",
+    "RANGE_MISSING": "Enter From and To",
+    "TASK_NOT_FOUND": "Task not found"
+  },
+  "INFO": {
+    "STORAGE": "The time per day (timeSpentOnDay) is authoritative. From–to entries are stored and synced in addition."
+  }
+}
