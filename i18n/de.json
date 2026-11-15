@@ -83,7 +83,13 @@
     "DURATION_FIXED": "Dauer korrigiert",
     "TIME_FIXED": "Zeit korrigiert",
     "OVER": "Abschnitte > gebucht",
-    "OVER_TOOLTIP": "Die Abschnitte sind länger als die gebuchte Zeit (timeSpentOnDay), z. B. nach einer Änderung in Super Productivity oder auf einem anderen Gerät. Maßgeblich ist die gebuchte Zeit; Abschnitt anpassen oder löschen."
+    "OVER_TOOLTIP": "Die Abschnitte sind länger als die gebuchte Zeit (timeSpentOnDay). Maßgeblich ist die gebuchte Zeit. Über das Menü die Differenz zur gebuchten Zeit hinzufügen, wenn die Abschnitte stimmen, oder den letzten Abschnitt kürzen, wenn die gebuchte Zeit stimmt.",
+    "ALIGN": "{{duration}} zur gebuchten Zeit hinzufügen",
+    "ALIGN_TOOLTIP": "Wenn die Abschnitte stimmen. Ist ein Abschnitt falsch, ihn stattdessen bearbeiten oder löschen: Der Überhang wird zuerst verrechnet, die gebuchte Zeit sinkt dabei nicht.",
+    "ALIGNED": "Gebuchte Zeit an die Abschnitte angeglichen",
+    "TRIM": "Letzten Abschnitt um {{duration}} kürzen",
+    "TRIM_TOOLTIP": "Wenn die gebuchte Zeit stimmt. Zieht das Ende des letzten Abschnitts nach vorn; ist er kürzer als die Differenz, wird er entfernt und der davor gekürzt. Die gebuchte Zeit bleibt unverändert.",
+    "TRIMMED": "Abschnitte an die gebuchte Zeit angeglichen"
   },
   "ERROR": {
     "GENERIC": "Fehler: {{error}}",

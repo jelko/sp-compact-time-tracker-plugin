@@ -1,6 +1,6 @@
 # Compact Time Tracker (Super Productivity plugin)
 
-Compact time tracking on its own page: search a task, start/stop, and a chronological list with corrections.
+Compact time tracking in Super Productivity's right side panel: search a task, start/stop, and a chronological list with corrections.
 
 <img width="1270" height="934" alt="sp-compact-time-tracker-v1-full-width" src="https://github.com/user-attachments/assets/432d7eb3-e5ae-441b-933a-4f99d3825b7b" />
 
@@ -19,7 +19,7 @@ Limitations on 19.3.x:
 ## Installation
 1. Download `plugin.zip` from the latest [release](https://github.com/jelko/sp-compact-time-tracker-plugin/releases), or build it yourself (see [Development](#development)).
 2. In Super Productivity, open **Settings → Plugins → Choose Plugin File** and pick `plugin.zip`. The same plugin `id` replaces an installed version.
-3. "Compact Time Tracker" appears in the left menu (the name is localised).
+3. A "Compact Time Tracker" button appears with the side panel buttons; it opens the plugin in the right side panel (the name is localised). The panel can be resized by dragging its edge.
 
 The background part (`plugin.js`) runs in the app window with the same permissions as the app. Super Productivity asks for confirmation on upload.
 
@@ -35,22 +35,29 @@ The background part (`plugin.js`) runs in the app window with the same permissio
   - On quit or crash, at most about one minute is lost.
 
 **From–to entries** are stored with `persistDataSynced` and synced by Super Productivity.
-- **Keys:** one key per logical day and app session, `seg-<YYYY-MM-DD>-<session>`. Content: `{"v":1,"segs":[{id,taskId,start,end,seen,base}]}`.
-- **Why separate keys:** Sync resolves conflicts per key by "last write wins". With a key per session, two devices do not overwrite each other, and no entry reaches the 256 KB limit.
+- **Keys:** one key per entry, `seg-<YYYY-MM-DD>-<entryId>` (logical day). Content: `{"v":2,"seg":{id,taskId,start,end,seen,base}}`.
+- **Why one key per entry:** every key has a single writer at a time. The background part writes only the running entry, the page only finished ones, so no write can overwrite another. Sync resolves conflicts per key by "last write wins", so devices never overwrite each other's entries either.
+- **Older format:** keys from 1.0.x (`seg-<day>-<session>` with `{"v":1,"segs":[...]}`) are migrated automatically when the plugin starts.
 - **Running entry:** saved immediately on start and updated every minute with a checkpoint timestamp (`seen`).
-- **After a crash or quit:** on the next start, an open entry whose last checkpoint is older than 2.5 minutes ends at that checkpoint. Up to that point the time is also persisted in `timeSpentOnDay`.
+- **Device:** each entry records the device it was tracked on (`dev`). The device id is kept with `setSecret`, which is local to the device and never synced.
+- **Quitting the app stops all timers:** Super Productivity does not resume tracking after a restart. When the plugin starts, it finishes every open entry recorded on this device at its last checkpoint. If only the plugin was reloaded while a timer kept running (update, disable/enable), it detects the running timer (its task's `timeSpentOnDay` keeps growing) and continues that entry. Open entries from other devices are left alone and shown as running while they keep checkpointing.
+- **After a crash or quit:** an open entry ends at its last checkpoint; up to that point its time is also persisted in `timeSpentOnDay`. Entries of this device are finished on the next start (see above). Open entries without any checkpoint for 15 minutes, e.g. from a device that stopped syncing, are finished as well. An open entry is never shown as ending "now" unless it is actually running.
 - **Idle time:** if Super Productivity discards idle time, the entry's end is moved earlier accordingly when it stops.
 - **Retention:** old entries are not deleted automatically.
 
 **Reconciliation in the list** (per task and day):
 - More time tracked than entries cover (e.g. time tracked before the plugin was installed, time tracked in Super Productivity itself, or a duration without time of day): the difference appears as a **"no time of day"** row.
-- Entries longer than the tracked time (e.g. after a change in Super Productivity or on another device): a red **"entries > tracked"** row appears. The tracked time stays authoritative; adjust or delete the entry.
+- Entries longer than the tracked time (e.g. after a change in Super Productivity or on another device): a red **"entries > tracked"** row appears. The tracked time stays authoritative. Two ways to resolve it:
+  - If the entries are right: **"Add X to tracked time"** in the row's menu.
+  - If the tracked time is right: **"Shorten last entry by X"** in the row's menu. It moves the end of the last entry earlier; if that entry is shorter than the difference, it is removed and the one before is shortened. The tracked time stays unchanged; a running entry is left alone.
+  - Or edit or delete a specific entry yourself. Shortening or deleting first uses up the excess, so fixing a wrong entry never reduces the tracked time.
 
 ## Compact view
-The layout follows the width of the plugin area, not the window.
+The layout follows the width of the plugin area, not the window, so it fits the side panel (320 px by default, 250 px minimum).
 - **680 px and narrower:** the search field gets its own row, with the timer or manual entry and the mode switch below it. List rows show the title on top, with time, duration and actions underneath.
 - **440 px and narrower:** manual entry wraps onto several rows.
-- Tested at widths of 600, 420 and 360 px.
+- **340 px and narrower (side panel):** smaller controls; list rows show title and duration on top, time, continue and menu underneath.
+- Tested at widths of 600, 420, 360, 340, 320 and 250 px.
 
 ## Languages
 English and German are supported; any other app language falls back to English. The language follows Super Productivity's setting and changes without reloading (`languageChange` hook).
@@ -66,11 +73,11 @@ All colours come from Super Productivity's theme variables (`--card-bg`, `--text
 
 ## Plugin rules
 The plugin uses only methods and hooks defined in the PluginAPI's `types.ts`. It does not use `localStorage` and nothing bypasses the API.
-- **Storage:** entries are stored and read with `persistDataSynced`, `loadSyncedData` and `listSyncedDataKeys`.
+- **Storage:** entries are stored and read with `persistDataSynced`, `loadSyncedData` and `listSyncedDataKeys`. The device id uses `setSecret`/`getSecret` (local-only storage).
 - **Exception for 19.3.x:** there the plugin starts and stops via `dispatchAction` with the permitted action `[Task] SetCurrentTask`. From 20.0 it uses `startTracking`/`stopTracking`.
 
 ## Limitations
-- **Running timer when the page opens:** the page detects it from the entry's last checkpoint. If a timer is running on another device at the same time, its entry may appear as "running" until you start or stop on this device.
+- **Running timer when the page opens:** the page detects a timer on this device within about 1.5 seconds (its task's tracked time grows). Entries running on another device are shown as running as long as their checkpoints arrive by sync.
 - **Plugin loaded late:** if tracking starts before the plugin has loaded, no entry is created for that run. The time then appears as "no time of day".
 - **Simultaneous corrections on two devices:** if the same entry is corrected on two devices at the same time, the last change wins after sync.
 

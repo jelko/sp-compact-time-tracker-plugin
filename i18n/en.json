@@ -83,7 +83,13 @@
     "DURATION_FIXED": "Duration corrected",
     "TIME_FIXED": "Time corrected",
     "OVER": "entries > tracked",
-    "OVER_TOOLTIP": "The entries are longer than the tracked time (timeSpentOnDay), e.g. after a change in Super Productivity or on another device. The tracked time is authoritative; adjust or delete an entry."
+    "OVER_TOOLTIP": "The entries are longer than the tracked time (timeSpentOnDay). The tracked time is authoritative. Use the menu to add the difference to the tracked time if the entries are right, or to shorten the last entry if the tracked time is right.",
+    "ALIGN": "Add {{duration}} to tracked time",
+    "ALIGN_TOOLTIP": "Use this if the entries are correct. If an entry is wrong, edit or delete it instead: the excess is used up first, tracked time is not reduced.",
+    "ALIGNED": "Tracked time matched to the entries",
+    "TRIM": "Shorten last entry by {{duration}}",
+    "TRIM_TOOLTIP": "Use this if the tracked time is correct. Moves the end of the last entry earlier; if it is shorter than the difference, it is removed and the one before is shortened. Tracked time stays unchanged.",
+    "TRIMMED": "Entries shortened to the tracked time"
   },
   "ERROR": {
     "GENERIC": "Error: {{error}}",

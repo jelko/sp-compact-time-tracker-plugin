@@ -128,6 +128,7 @@ button{cursor:pointer}
 .live{font:500 12px var(--ct-font);color:var(--ct-accent);padding:0 4px}
 .manual .dash,.manual .or{color:var(--ct-muted);font-size:12px}
 .manual input[type=time]{font-family:var(--ct-mono)}
+.menu-list button{white-space:nowrap}
 .menu-list{position:absolute;right:0;top:100%;background:var(--ct-surface);border:1px solid var(--ct-line);border-radius:4px;box-shadow:0 8px 24px var(--ct-shadow);z-index:15;min-width:150px;padding:4px 0}
 .menu-list button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 14px}
 .menu-list button:hover{background:var(--ct-hover)}
@@ -170,6 +171,33 @@ button{cursor:pointer}
   .manual #mAdd{flex:1 1 auto;width:auto;padding:8px 12px}
   .week{font-size:12px}
 }
+/* Side panel (default 320 px, minimum 250 px) */
+@container ct (max-width:340px){
+  .bar{border-radius:4px}
+  .search input{padding:10px 8px;font-size:14px}
+  .sel-proj{margin-right:2px}
+  .search .iconbtn{margin-right:4px}
+  .timer{padding:6px 8px;gap:8px}
+  .clock{font-size:15px}
+  .go{width:auto;padding:8px 12px}
+  .seg{padding:0 4px;gap:0}
+  .iconbtn{width:28px;height:28px;flex-basis:28px}
+  .ctrl{flex-wrap:wrap}
+  .manual{padding:8px;flex:1 1 100%}
+  .ctrl .seg{margin-left:auto}
+  #manualBox:not([hidden])+.seg{border-left:0;border-top:1px solid var(--ct-line);flex:1 1 100%;justify-content:flex-end}
+  .manual input[type=time]{flex:1 1 0;min-width:88px}
+  .manual input.dur{flex:0 0 60px;width:60px}
+  .manual #mAdd{flex:1 1 auto}
+  .entry{grid-template-columns:minmax(0,1fr) auto auto;gap:2px 6px;padding:6px 4px 6px 8px}
+  .entry .desc{grid-column:1;grid-row:1}
+  .entry .dur-in{grid-column:2/4;grid-row:1;justify-self:end;width:72px;padding:4px;font-size:13px}
+  .entry .range{grid-column:1;grid-row:2;min-width:0}
+  .entry .play{grid-column:2;grid-row:2}
+  .entry .menu{grid-column:3;grid-row:2}
+  .tm{font-size:12px}
+  .dayhead{padding:7px 8px}
+  .week{padding:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .go:disabled,.btn:disabled{opacity:.6;cursor:default}
@@ -236,7 +264,7 @@ const API=window.PluginAPI;
 const H=3600000,M=60000,REST_MIN=60000;
 const $=id=>document.getElementById(id);
 // ---------- Language (texts from i18n/*.json, embedded by build.py) ----------
-/*I18N-START*/const I18N={"en":{"PLUGIN":{"NAME":"Compact Time Tracker","DESCRIPTION":"Compact time tracking: search a task, start/stop, chronological list with corrections."},"SEARCH":{"PLACEHOLDER":"What are you working on? Search task or project …","ARIA":"Search task or project","PROJECTS":"Projects","SHOW_TASKS":"Show tasks","ONLY_PROJECT":"Only {{project}}","CLEAR_FILTER":"Clear filter ×","DONE":"done","NO_RESULTS":"No results.","CREATE_IN":"+ Create task “{{title}}” in","CREATE_HINT":"· choose a project, Enter = first","CLEAR_SELECTION":"Clear selection","EDIT_ARIA":"Search task"},"PROJECT":{"NEW":"New project","NAME_PLACEHOLDER":"Project name","COLOR":"Colour {{color}}","NONE":"No project","CREATED":"Project “{{name}}” created","CREATE_FAILED":"Could not create project: {{error}}"},"TASK":{"DELETED":"(deleted task)","CREATED_IN":"Task created in {{project}}","CREATE_FAILED":"Could not create task: {{error}}","IS_DONE":"“{{title}}” is done. Reopen it to track time on it?","REOPEN":"Reopen","REOPENED":"Task reopened","SELECT_FIRST":"Select a task first"},"TIMER":{"START":"Start","STOP":"Stop","MODE_TIMER":"Timer","MODE_TIMER_ARIA":"Timer mode","MODE_MANUAL":"Manual","MODE_MANUAL_ARIA":"Manual mode","START_FAILED":"Could not start: {{error}}","STOP_FAILED":"Could not stop: {{error}}","STOP_NOT_APPLIED":"Super Productivity did not apply the stop"},"MANUAL":{"DATE":"Date","FROM":"From","TO":"To","OR":"or","DURATION":"Duration","DURATION_ONLY":"Duration only, no time of day","BOOK":"Add","BOOKED_RANGE":"{{from}}–{{to}} added to “{{title}}”","BOOKED_DURATION":"{{duration}} added to “{{title}}” (no time of day)","NEED_INPUT":"Enter From and To, or a duration such as 1:30, 90m, 1.5h"},"LIST":{"THIS_WEEK":"This week","TOTAL":"Total","TODAY":"Today","YESTERDAY":"Yesterday","EMPTY":"No time tracked in this period. Choose a task above and start the timer.","LOAD_MORE":"Load 7 more days","NO_TIME":"no time of day","NO_TIME_TOOLTIP":"Tracked time without an entry: added as a duration, tracked in Super Productivity itself, before the plugin was installed or while it was inactive","RUNNING":"running","RUNNING_LOCKED":"Running, correct it after stopping","CONTINUE":"Continue","IS_RUNNING":"Running","MORE_ACTIONS":"More actions","EDIT":"Edit / move","DELETE":"Delete","CANCEL":"Cancel","SAVE":"Save","CREATE":"Create","CONFIRM_DELETE":"Delete {{what}} on {{day}} from “{{title}}”?","WITHOUT_TIME":"{{duration}} without time of day","DELETED":"Entry deleted","SAVED":"Saved","DURATION_FIXED":"Duration corrected","TIME_FIXED":"Time corrected","OVER":"entries > tracked","OVER_TOOLTIP":"The entries are longer than the tracked time (timeSpentOnDay), e.g. after a change in Super Productivity or on another device. The tracked time is authoritative; adjust or delete an entry."},"ERROR":{"GENERIC":"Error: {{error}}","LOAD":"Could not load data: {{error}}","DURATION":"Duration not recognised, e.g. 1:30, 90m or 1.5h","RANGE_ORDER":"“To” must be after “From”","RANGE_MISSING":"Enter From and To","TASK_NOT_FOUND":"Task not found"},"INFO":{"STORAGE":"The time per day (timeSpentOnDay) is authoritative. From–to entries are stored and synced in addition."}},"de":{"PLUGIN":{"NAME":"Kompakt-Zeiterfassung","DESCRIPTION":"Kompakte Zeiterfassung: Aufgabe suchen, Start/Stopp, chronologische Liste mit Korrektur."},"SEARCH":{"PLACEHOLDER":"Woran arbeitest du? Aufgabe oder Projekt suchen …","ARIA":"Aufgabe oder Projekt suchen","PROJECTS":"Projekte","SHOW_TASKS":"Aufgaben anzeigen","ONLY_PROJECT":"Nur {{project}}","CLEAR_FILTER":"Filter aufheben ×","DONE":"erledigt","NO_RESULTS":"Keine Treffer.","CREATE_IN":"+ Neue Aufgabe „{{title}}“ anlegen in","CREATE_HINT":"· Projekt wählen, Enter = erstes","CLEAR_SELECTION":"Auswahl aufheben","EDIT_ARIA":"Aufgabe suchen"},"PROJECT":{"NEW":"Neues Projekt","NAME_PLACEHOLDER":"Projektname","COLOR":"Farbe {{color}}","NONE":"Ohne Projekt","CREATED":"Projekt „{{name}}“ angelegt","CREATE_FAILED":"Projekt konnte nicht angelegt werden: {{error}}"},"TASK":{"DELETED":"(gelöschte Aufgabe)","CREATED_IN":"Aufgabe angelegt in {{project}}","CREATE_FAILED":"Aufgabe konnte nicht angelegt werden: {{error}}","IS_DONE":"„{{title}}“ ist erledigt. Wieder öffnen, um darauf zu buchen?","REOPEN":"Wieder öffnen","REOPENED":"Aufgabe wieder geöffnet","SELECT_FIRST":"Erst eine Aufgabe wählen"},"TIMER":{"START":"Start","STOP":"Stopp","MODE_TIMER":"Timer","MODE_TIMER_ARIA":"Timer-Modus","MODE_MANUAL":"Manuell","MODE_MANUAL_ARIA":"Manueller Modus","START_FAILED":"Start nicht möglich: {{error}}","STOP_FAILED":"Stopp nicht möglich: {{error}}","STOP_NOT_APPLIED":"Stopp wurde von Super Productivity nicht übernommen"},"MANUAL":{"DATE":"Datum","FROM":"Von","TO":"Bis","OR":"oder","DURATION":"Dauer","DURATION_ONLY":"Nur Dauer, ohne Uhrzeit","BOOK":"Buchen","BOOKED_RANGE":"{{from}}–{{to}} auf „{{title}}“ gebucht","BOOKED_DURATION":"{{duration}} auf „{{title}}“ gebucht (ohne Uhrzeit)","NEED_INPUT":"Von und Bis angeben oder eine Dauer wie 1:30, 90m, 1,5h"},"LIST":{"THIS_WEEK":"Diese Woche","TOTAL":"Gesamt","TODAY":"Heute","YESTERDAY":"Gestern","EMPTY":"In diesem Zeitraum wurde keine Zeit gebucht. Wähle oben eine Aufgabe und starte den Timer.","LOAD_MORE":"Weitere 7 Tage laden","NO_TIME":"ohne Uhrzeit","NO_TIME_TOOLTIP":"Gebuchte Zeit ohne Abschnitt: manuell als Dauer gebucht, in Super Productivity selbst erfasst, vor der Installation des Plugins oder während es inaktiv war","RUNNING":"läuft","RUNNING_LOCKED":"Läuft gerade, Korrektur nach dem Stoppen","CONTINUE":"Fortsetzen","IS_RUNNING":"Läuft","MORE_ACTIONS":"Weitere Aktionen","EDIT":"Bearbeiten / umbuchen","DELETE":"Löschen","CANCEL":"Abbrechen","SAVE":"Speichern","CREATE":"Anlegen","CONFIRM_DELETE":"{{what}} vom {{day}} bei „{{title}}“ löschen?","WITHOUT_TIME":"{{duration}} ohne Uhrzeit","DELETED":"Eintrag gelöscht","SAVED":"Gespeichert","DURATION_FIXED":"Dauer korrigiert","TIME_FIXED":"Zeit korrigiert","OVER":"Abschnitte > gebucht","OVER_TOOLTIP":"Die Abschnitte sind länger als die gebuchte Zeit (timeSpentOnDay), z. B. nach einer Änderung in Super Productivity oder auf einem anderen Gerät. Maßgeblich ist die gebuchte Zeit; Abschnitt anpassen oder löschen."},"ERROR":{"GENERIC":"Fehler: {{error}}","LOAD":"Daten konnten nicht geladen werden: {{error}}","DURATION":"Dauer nicht erkannt, z. B. 1:30, 90m oder 1,5h","RANGE_ORDER":"„Bis“ muss nach „Von“ liegen","RANGE_MISSING":"Von und Bis angeben","TASK_NOT_FOUND":"Aufgabe nicht gefunden"},"INFO":{"STORAGE":"Maßgeblich ist die Zeit je Tag (timeSpentOnDay). Von–Bis-Abschnitte werden zusätzlich gespeichert und synchronisiert."}}};/*I18N-END*/
+/*I18N-START*/const I18N={"en":{"PLUGIN":{"NAME":"Compact Time Tracker","DESCRIPTION":"Compact time tracking: search a task, start/stop, chronological list with corrections."},"SEARCH":{"PLACEHOLDER":"What are you working on? Search task or project …","ARIA":"Search task or project","PROJECTS":"Projects","SHOW_TASKS":"Show tasks","ONLY_PROJECT":"Only {{project}}","CLEAR_FILTER":"Clear filter ×","DONE":"done","NO_RESULTS":"No results.","CREATE_IN":"+ Create task “{{title}}” in","CREATE_HINT":"· choose a project, Enter = first","CLEAR_SELECTION":"Clear selection","EDIT_ARIA":"Search task"},"PROJECT":{"NEW":"New project","NAME_PLACEHOLDER":"Project name","COLOR":"Colour {{color}}","NONE":"No project","CREATED":"Project “{{name}}” created","CREATE_FAILED":"Could not create project: {{error}}"},"TASK":{"DELETED":"(deleted task)","CREATED_IN":"Task created in {{project}}","CREATE_FAILED":"Could not create task: {{error}}","IS_DONE":"“{{title}}” is done. Reopen it to track time on it?","REOPEN":"Reopen","REOPENED":"Task reopened","SELECT_FIRST":"Select a task first"},"TIMER":{"START":"Start","STOP":"Stop","MODE_TIMER":"Timer","MODE_TIMER_ARIA":"Timer mode","MODE_MANUAL":"Manual","MODE_MANUAL_ARIA":"Manual mode","START_FAILED":"Could not start: {{error}}","STOP_FAILED":"Could not stop: {{error}}","STOP_NOT_APPLIED":"Super Productivity did not apply the stop"},"MANUAL":{"DATE":"Date","FROM":"From","TO":"To","OR":"or","DURATION":"Duration","DURATION_ONLY":"Duration only, no time of day","BOOK":"Add","BOOKED_RANGE":"{{from}}–{{to}} added to “{{title}}”","BOOKED_DURATION":"{{duration}} added to “{{title}}” (no time of day)","NEED_INPUT":"Enter From and To, or a duration such as 1:30, 90m, 1.5h"},"LIST":{"THIS_WEEK":"This week","TOTAL":"Total","TODAY":"Today","YESTERDAY":"Yesterday","EMPTY":"No time tracked in this period. Choose a task above and start the timer.","LOAD_MORE":"Load 7 more days","NO_TIME":"no time of day","NO_TIME_TOOLTIP":"Tracked time without an entry: added as a duration, tracked in Super Productivity itself, before the plugin was installed or while it was inactive","RUNNING":"running","RUNNING_LOCKED":"Running, correct it after stopping","CONTINUE":"Continue","IS_RUNNING":"Running","MORE_ACTIONS":"More actions","EDIT":"Edit / move","DELETE":"Delete","CANCEL":"Cancel","SAVE":"Save","CREATE":"Create","CONFIRM_DELETE":"Delete {{what}} on {{day}} from “{{title}}”?","WITHOUT_TIME":"{{duration}} without time of day","DELETED":"Entry deleted","SAVED":"Saved","DURATION_FIXED":"Duration corrected","TIME_FIXED":"Time corrected","OVER":"entries > tracked","OVER_TOOLTIP":"The entries are longer than the tracked time (timeSpentOnDay). The tracked time is authoritative. Use the menu to add the difference to the tracked time if the entries are right, or to shorten the last entry if the tracked time is right.","ALIGN":"Add {{duration}} to tracked time","ALIGN_TOOLTIP":"Use this if the entries are correct. If an entry is wrong, edit or delete it instead: the excess is used up first, tracked time is not reduced.","ALIGNED":"Tracked time matched to the entries","TRIM":"Shorten last entry by {{duration}}","TRIM_TOOLTIP":"Use this if the tracked time is correct. Moves the end of the last entry earlier; if it is shorter than the difference, it is removed and the one before is shortened. Tracked time stays unchanged.","TRIMMED":"Entries shortened to the tracked time"},"ERROR":{"GENERIC":"Error: {{error}}","LOAD":"Could not load data: {{error}}","DURATION":"Duration not recognised, e.g. 1:30, 90m or 1.5h","RANGE_ORDER":"“To” must be after “From”","RANGE_MISSING":"Enter From and To","TASK_NOT_FOUND":"Task not found"},"INFO":{"STORAGE":"The time per day (timeSpentOnDay) is authoritative. From–to entries are stored and synced in addition."}},"de":{"PLUGIN":{"NAME":"Kompakt-Zeiterfassung","DESCRIPTION":"Kompakte Zeiterfassung: Aufgabe suchen, Start/Stopp, chronologische Liste mit Korrektur."},"SEARCH":{"PLACEHOLDER":"Woran arbeitest du? Aufgabe oder Projekt suchen …","ARIA":"Aufgabe oder Projekt suchen","PROJECTS":"Projekte","SHOW_TASKS":"Aufgaben anzeigen","ONLY_PROJECT":"Nur {{project}}","CLEAR_FILTER":"Filter aufheben ×","DONE":"erledigt","NO_RESULTS":"Keine Treffer.","CREATE_IN":"+ Neue Aufgabe „{{title}}“ anlegen in","CREATE_HINT":"· Projekt wählen, Enter = erstes","CLEAR_SELECTION":"Auswahl aufheben","EDIT_ARIA":"Aufgabe suchen"},"PROJECT":{"NEW":"Neues Projekt","NAME_PLACEHOLDER":"Projektname","COLOR":"Farbe {{color}}","NONE":"Ohne Projekt","CREATED":"Projekt „{{name}}“ angelegt","CREATE_FAILED":"Projekt konnte nicht angelegt werden: {{error}}"},"TASK":{"DELETED":"(gelöschte Aufgabe)","CREATED_IN":"Aufgabe angelegt in {{project}}","CREATE_FAILED":"Aufgabe konnte nicht angelegt werden: {{error}}","IS_DONE":"„{{title}}“ ist erledigt. Wieder öffnen, um darauf zu buchen?","REOPEN":"Wieder öffnen","REOPENED":"Aufgabe wieder geöffnet","SELECT_FIRST":"Erst eine Aufgabe wählen"},"TIMER":{"START":"Start","STOP":"Stopp","MODE_TIMER":"Timer","MODE_TIMER_ARIA":"Timer-Modus","MODE_MANUAL":"Manuell","MODE_MANUAL_ARIA":"Manueller Modus","START_FAILED":"Start nicht möglich: {{error}}","STOP_FAILED":"Stopp nicht möglich: {{error}}","STOP_NOT_APPLIED":"Stopp wurde von Super Productivity nicht übernommen"},"MANUAL":{"DATE":"Datum","FROM":"Von","TO":"Bis","OR":"oder","DURATION":"Dauer","DURATION_ONLY":"Nur Dauer, ohne Uhrzeit","BOOK":"Buchen","BOOKED_RANGE":"{{from}}–{{to}} auf „{{title}}“ gebucht","BOOKED_DURATION":"{{duration}} auf „{{title}}“ gebucht (ohne Uhrzeit)","NEED_INPUT":"Von und Bis angeben oder eine Dauer wie 1:30, 90m, 1,5h"},"LIST":{"THIS_WEEK":"Diese Woche","TOTAL":"Gesamt","TODAY":"Heute","YESTERDAY":"Gestern","EMPTY":"In diesem Zeitraum wurde keine Zeit gebucht. Wähle oben eine Aufgabe und starte den Timer.","LOAD_MORE":"Weitere 7 Tage laden","NO_TIME":"ohne Uhrzeit","NO_TIME_TOOLTIP":"Gebuchte Zeit ohne Abschnitt: manuell als Dauer gebucht, in Super Productivity selbst erfasst, vor der Installation des Plugins oder während es inaktiv war","RUNNING":"läuft","RUNNING_LOCKED":"Läuft gerade, Korrektur nach dem Stoppen","CONTINUE":"Fortsetzen","IS_RUNNING":"Läuft","MORE_ACTIONS":"Weitere Aktionen","EDIT":"Bearbeiten / umbuchen","DELETE":"Löschen","CANCEL":"Abbrechen","SAVE":"Speichern","CREATE":"Anlegen","CONFIRM_DELETE":"{{what}} vom {{day}} bei „{{title}}“ löschen?","WITHOUT_TIME":"{{duration}} ohne Uhrzeit","DELETED":"Eintrag gelöscht","SAVED":"Gespeichert","DURATION_FIXED":"Dauer korrigiert","TIME_FIXED":"Zeit korrigiert","OVER":"Abschnitte > gebucht","OVER_TOOLTIP":"Die Abschnitte sind länger als die gebuchte Zeit (timeSpentOnDay). Maßgeblich ist die gebuchte Zeit. Über das Menü die Differenz zur gebuchten Zeit hinzufügen, wenn die Abschnitte stimmen, oder den letzten Abschnitt kürzen, wenn die gebuchte Zeit stimmt.","ALIGN":"{{duration}} zur gebuchten Zeit hinzufügen","ALIGN_TOOLTIP":"Wenn die Abschnitte stimmen. Ist ein Abschnitt falsch, ihn stattdessen bearbeiten oder löschen: Der Überhang wird zuerst verrechnet, die gebuchte Zeit sinkt dabei nicht.","ALIGNED":"Gebuchte Zeit an die Abschnitte angeglichen","TRIM":"Letzten Abschnitt um {{duration}} kürzen","TRIM_TOOLTIP":"Wenn die gebuchte Zeit stimmt. Zieht das Ende des letzten Abschnitts nach vorn; ist er kürzer als die Differenz, wird er entfernt und der davor gekürzt. Die gebuchte Zeit bleibt unverändert.","TRIMMED":"Abschnitte an die gebuchte Zeit angeglichen"},"ERROR":{"GENERIC":"Fehler: {{error}}","LOAD":"Daten konnten nicht geladen werden: {{error}}","DURATION":"Dauer nicht erkannt, z. B. 1:30, 90m oder 1,5h","RANGE_ORDER":"„Bis“ muss nach „Von“ liegen","RANGE_MISSING":"Von und Bis angeben","TASK_NOT_FOUND":"Aufgabe nicht gefunden"},"INFO":{"STORAGE":"Maßgeblich ist die Zeit je Tag (timeSpentOnDay). Von–Bis-Abschnitte werden zusätzlich gespeichert und synchronisiert."}}};/*I18N-END*/
 let lang='en';
 function pickLang(code){const c=String(code||'').toLowerCase();return I18N[c]?c:(I18N[c.split('-')[0]]?c.split('-')[0]:'en')}
 function lookup(d,key){return key.split('.').reduce((o,k)=>o&&o[k],d)}
@@ -262,35 +290,35 @@ let segs=[],localCur=null; // segs: [{key,id,taskId,start,end,seen,base,day}]; l
 let localCurKnown=false;
 let selTaskId=null,eTaskId=null,days=7,openMenu=null,editKey=null,confirmKey=null,listDirty=false;
 
-// ---------- Entries (persistDataSynced, one key per day and session) ----------
-const SEG_PREFIX='seg-',STALE_MS=150000;
-const EDIT_SESSION='e'+Date.now().toString(36).slice(-5)+Math.random().toString(36).slice(2,5);
+// ---------- Entries (persistDataSynced, one key per entry) ----------
+// Key "seg-<day>-<entryId>" with {"v":2,"seg":{...}}. Keys of 1.0.x ({"v":1,"segs":[...]}) are still
+// read; plugin.js migrates them on start. One key per entry: the page writes only finished
+// entries, plugin.js only the running one, so no write can overwrite another.
+const SEG_PREFIX='seg-',LIVE_MS=150000;
 const keyDay=k=>k.slice(SEG_PREFIX.length,SEG_PREFIX.length+10);
-function parseSegs(str){try{const o=JSON.parse(str||'');return o&&Array.isArray(o.segs)?o:{v:1,segs:[]}}catch(e){return{v:1,segs:[]}}}
+const newSegId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function parseKey(str){try{const o=JSON.parse(str||'');if(o&&o.seg)return{legacy:false,segs:[o.seg]};if(o&&Array.isArray(o.segs))return{legacy:true,segs:o.segs}}catch(e){}return{legacy:false,segs:[]}}
 async function loadSegs(){
   const from=addDays(today(),-(days-1));
   const keys=(await API.listSyncedDataKeys(SEG_PREFIX)).filter(k=>keyDay(k)>=from);
-  const all=await Promise.all(keys.map(async k=>parseSegs(await API.loadSyncedData(k)).segs.map(x=>({...x,key:k,day:keyDay(k)}))));
+  const all=await Promise.all(keys.map(async k=>{const p=parseKey(await API.loadSyncedData(k));
+    return p.segs.map(x=>({...x,key:k,legacy:p.legacy,day:keyDay(k)}))}));
   segs=all.flat();
 }
-// Read fresh, modify, write (an empty key is cleared)
-async function modifyKey(key,fn){
-  const data=parseSegs(await API.loadSyncedData(key));fn(data);
-  await API.persistDataSynced(data.segs.length?JSON.stringify(data):'',key);
+const plain=x=>({id:x.id,taskId:x.taskId,start:x.start,end:x.end,seen:x.seen,base:x.base,dev:x.dev});
+const writeSeg=(day,seg)=>API.persistDataSynced(JSON.stringify({v:2,seg:plain(seg)}),SEG_PREFIX+day+'-'+seg.id);
+async function dropFromKey(x){
+  if(!x.legacy){await API.persistDataSynced('',x.key);return}
+  const p=parseKey(await API.loadSyncedData(x.key)),rest=p.segs.filter(y=>y.id!==x.id);
+  await API.persistDataSynced(rest.length?JSON.stringify({v:1,segs:rest}):'',x.key);
 }
-const plain=x=>({id:x.id,taskId:x.taskId,start:x.start,end:x.end,seen:x.seen,base:x.base});
-async function segAdd(taskId,start,end,day){
-  const seg={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),taskId,start,end,seen:end,base:null};
-  await modifyKey(SEG_PREFIX+day+'-'+EDIT_SESSION,d=>d.segs.push(seg));
+async function segAdd(taskId,start,end,day){await writeSeg(day,{id:newSegId(),taskId,start,end,seen:end,base:null})}
+async function segUpdate(x,patch,newDay){
+  const next={...plain(x),...patch},day=newDay||x.day;
+  await writeSeg(day,next);
+  if(x.legacy||day!==x.day)await dropFromKey(x);
 }
-async function segUpdate(seg,patch,newDay){
-  const next={...plain(seg),...patch};
-  if(newDay&&newDay!==seg.day){
-    await modifyKey(SEG_PREFIX+newDay+'-'+EDIT_SESSION,d=>d.segs.push(next));
-    await modifyKey(seg.key,d=>{d.segs=d.segs.filter(x=>x.id!==seg.id)});
-  }else await modifyKey(seg.key,d=>{const i=d.segs.findIndex(x=>x.id===seg.id);if(i>=0)d.segs[i]=next});
-}
-async function segRemove(seg){await modifyKey(seg.key,d=>{d.segs=d.segs.filter(x=>x.id!==seg.id)})}
+async function segRemove(x){await dropFromKey(x)}
 
 // ---------- Date/time (logical day according to "start of next day") ----------
 const pad=n=>String(n).padStart(2,'0');
@@ -322,42 +350,82 @@ const task=id=>tasks.find(t=>t.id===id);
 const color=p=>(p.theme&&p.theme.primary)||'#9e9e9e';
 const isTrackable=t=>!(t.subTaskIds&&t.subTaskIds.length);
 function taskLabel(t){if(!t)return tr('TASK.DELETED');const p=t.parentId&&task(t.parentId);return p?p.title+' › '+t.title:t.title}
-// Is an entry running? Per this device's hook, otherwise per a recent checkpoint in storage
-const isLive=x=>x.end==null&&Date.now()-(x.seen||x.start)<=STALE_MS;
+// Open entry with a recent checkpoint (written by a running timer here or on another device)
+const isLive=x=>x.end==null&&Date.now()-(x.seen||x.start)<=LIVE_MS;
+// This device's running entry: the open entry of the task that is tracking here.
+// Which task that is comes from the hook, or, if the page opened while a timer was already
+// running, from detectLocalTimer (its timeSpentOnDay grows). Until then nothing counts as running.
 function curSeg(){
-  if(localCurKnown){if(!localCur)return null;
-    return segs.filter(x=>x.end==null&&x.taskId===localCur.taskId).sort((a,b)=>b.start-a.start)[0]||null}
-  return segs.filter(isLive).sort((a,b)=>b.start-a.start)[0]||null;
+  if(!localCurKnown||!localCur)return null;
+  return segs.filter(x=>x.end==null&&x.taskId===localCur.taskId&&(x.start>=localCur.since-15000||isLive(x)))
+    .sort((a,b)=>b.start-a.start)[0]||null;
 }
+// Running here, or on another device (open with a recent checkpoint): shown as running and locked.
+// Open entries left over from this device after a restart are finished by plugin.js on start.
+const isActive=x=>x===curSeg()||isLive(x);
 function runningTaskId(){const x=curSeg();return x?x.taskId:(localCurKnown&&localCur?localCur.taskId:null)}
 function runningSince(){const x=curSeg();return x?x.start:(localCur?localCur.since:0)}
 // Open entries without a recent checkpoint end at their last checkpoint
-const segEnd=x=>x.end!=null?x.end:(x===curSeg()?Date.now():Math.max(x.start,x.seen||x.start));
+const segEnd=x=>x.end!=null?x.end:(isActive(x)?Date.now():Math.max(x.start,x.seen||x.start));
 const segMs=x=>segEnd(x)-x.start;
 // timeSpentOnDay including the time running since the last load
 function tsod(t,d){let v=(t.timeSpentOnDay||{})[d]||0;
   if(t.id===runningTaskId()&&d===today())v+=Math.max(0,Date.now()-Math.max(fetchedAt,runningSince()||fetchedAt));return v}
 
+// Page opened without knowing whether a timer runs here: compare timeSpentOnDay of two loads
+// about 1.5 s apart. Only the local timer makes it grow every second (other devices arrive in batches).
+let growthRef=null;
+function detectLocalTimer(){
+  if(localCurKnown)return;
+  const now=Date.now(),m=new Map(tasks.map(t=>[t.id,(t.timeSpentOnDay||{})[today()]||0]));
+  if(!growthRef){growthRef={at:now,m};setTimeout(load,1500);return}
+  if(now-growthRef.at<1200)return;
+  let id=null;m.forEach((v,k)=>{if(v-(growthRef.m.get(k)||0)>=900)id=k});
+  localCurKnown=true;
+  const open=id&&segs.filter(x=>x.end==null&&x.taskId===id).sort((a,b)=>b.start-a.start)[0];
+  localCur=id?{taskId:id,since:open?open.start:now}:null;
+}
 async function load(){
   try{
     const [ts,ps]=await Promise.all([API.getTasks(),API.getAllProjects()]);
     tasks=ts||[];projects=(ps||[]).filter(p=>!p.isArchived);fetchedAt=Date.now();
     if(API.getDayContext){try{const c=await API.getDayContext();if(c)ctx=c}catch(e){}}
     await loadSegs();
+    detectLocalTimer();
   }catch(e){toast(tr('ERROR.LOAD',{error:e.message||e}))}
   renderSel();renderTimer();renderList();
 }
 let loadT=null;const loadSoon=()=>{clearTimeout(loadT);loadT=setTimeout(load,250)};
 
-// Changes timeSpentOnDay[day] by delta (read fresh so nothing gets overwritten)
-async function addTime(taskId,day,delta){
+// Changes timeSpentOnDay[day] by delta (read fresh so nothing gets overwritten).
+// segSum: total of this task's entries on that day before the change. If the entries exceed the
+// tracked time, a reduction first uses up that excess, so fixing a wrong entry never removes
+// tracked time.
+const segSumOf=(taskId,day)=>segs.filter(x=>x.taskId===taskId&&x.day===day).reduce((a,x)=>a+segMs(x),0);
+async function addTime(taskId,day,delta,segSum){
   if(!delta)return;
   const fresh=(await API.getTasks()).find(x=>x.id===taskId);if(!fresh)throw new Error(tr('ERROR.TASK_NOT_FOUND'));
-  const map={...(fresh.timeSpentOnDay||{})};const v=Math.max(0,(map[day]||0)+delta);
+  const cur=(fresh.timeSpentOnDay||{})[day]||0;
+  if(delta<0&&segSum!=null&&segSum>cur)delta=Math.min(0,delta+(segSum-cur));
+  if(!delta)return;
+  const map={...(fresh.timeSpentOnDay||{})};const v=Math.max(0,cur+delta);
   if(v>0)map[day]=v;else delete map[day];
   await API.updateTask(taskId,{timeSpentOnDay:map});
 }
-async function run(fn,okMsg){try{await fn();if(okMsg)toast(okMsg)}catch(e){toast(tr('ERROR.GENERIC',{error:e&&e.message||e}))}finally{editKey=confirmKey=null;await load()}}
+// Corrections run one after another. Each one resolves its row only when it runs (after the
+// previous correction and a fresh load), so quick successive edits never work on stale values.
+let corrQueue=Promise.resolve();
+const userError=msg=>Object.assign(new Error(msg),{isUser:true});
+function run(fn,okMsg){
+  corrQueue=corrQueue.then(async()=>{
+    try{const r=await fn();if(okMsg&&r!==false)toast(okMsg)}
+    catch(e){toast(e&&e.isUser?e.message:tr('ERROR.GENERIC',{error:e&&e.message||e}))}
+    finally{editKey=confirmKey=null;await load()}
+  });
+  return corrQueue;
+}
+// The row as it is now (segments and tracked time freshly loaded)
+const freshItem=key=>entries().flatMap(g=>g.items).find(i=>keyOf(i)===key)||null;
 
 // ---------- Notices ----------
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
@@ -526,19 +594,29 @@ const ICON_MORE='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy
 const keyOf=it=>it.kind==='seg'?'s|'+it.s.id:(it.kind==='over'?'o|':'r|')+it.t.id+'|'+it.d;
 let lastItems=new Map();
 function isInteracting(){const a=document.activeElement;return !!(editKey||confirmKey||(a&&$('list').contains(a)&&a.tagName==='INPUT'))}
+// Update durations and times of the rendered rows without rebuilding the list (the focused field stays as typed)
+function patchRows(){
+  const items=new Map(entries().flatMap(g=>g.items).map(i=>[keyOf(i),i]));
+  document.querySelectorAll('#list .entry[data-key]').forEach(row=>{
+    const it=items.get(row.dataset.key);if(!it)return;lastItems.set(row.dataset.key,it);
+    const a=document.activeElement,dur=row.querySelector('.dur-in');
+    if(dur&&dur!==a)dur.value=it.kind==='over'?'−'+fmtHM(it.ms):isActive(it.s||{})?fmtHMS(it.ms):fmtHM(it.ms);
+    if(it.kind==='seg')row.querySelectorAll('.tm').forEach(tm=>{if(tm!==a)tm.value=hhmm(tm.dataset.f==='start'?it.s.start:segEnd(it.s))});
+  });
+}
 function renderList(force){
-  if(!force&&isInteracting()){listDirty=true;updateTotals();return}
+  if(!force&&isInteracting()){listDirty=true;patchRows();updateTotals();return}
   listDirty=false;
   const L=$('list'),groups=entries();lastItems=new Map();
   if(!groups.length){L.innerHTML='<div class="day"><div class="empty">'+esc(tr('LIST.EMPTY'))+'</div></div>';updateTotals();return}
   L.innerHTML=groups.map(g=>`<section class="day"><div class="dayhead"><span>${dayLabel(g.d)}</span><span>${esc(tr('LIST.TOTAL'))} <b class="num" data-daytotal="${g.d}"></b></span></div>`+
     g.items.map(it=>{
       const {t,d,ms}=it,key=keyOf(it),p=proj(t.projectId),c=esc(color(p));lastItems.set(key,it);
-      const run=it.kind==='seg'?it.s===curSeg():(t.id===runningTaskId()&&d===today()&&!curSeg());
+      const run=it.kind==='seg'?isActive(it.s):(t.id===runningTaskId()&&d===today()&&!curSeg());
       const lockedRest=it.kind==='rest'&&t.id===runningTaskId()&&d===today();
       const par=t.parentId&&task(t.parentId),editing=editKey===key;
       const range=it.kind==='seg'
-        ?`<div class="range num"><input type="time" class="tm" data-f="start" value="${hhmm(it.s.start)}" aria-label="${esc(tr('MANUAL.FROM'))}" ${run?'disabled':''}>–${run?'<span class="live">'+esc(tr('LIST.RUNNING'))+'</span>':`<input type="time" class="tm" data-f="end" value="${hhmm(it.s.end)}" aria-label="${esc(tr('MANUAL.TO'))}">`}</div>`
+        ?`<div class="range num"><input type="time" class="tm" data-f="start" value="${hhmm(it.s.start)}" aria-label="${esc(tr('MANUAL.FROM'))}" ${run?'disabled':''}>–${run?'<span class="live">'+esc(tr('LIST.RUNNING'))+'</span>':`<input type="time" class="tm" data-f="end" value="${hhmm(segEnd(it.s))}" aria-label="${esc(tr('MANUAL.TO'))}">`}</div>`
         :it.kind==='over'?`<div class="range"><span class="nolabel over" title="${esc(tr('LIST.OVER_TOOLTIP'))}">${esc(tr('LIST.OVER'))}</span></div>`
         :`<div class="range"><span class="nolabel" title="${esc(tr('LIST.NO_TIME_TOOLTIP'))}">${esc(tr('LIST.NO_TIME'))}</span></div>`;
       const over=it.kind==='over',lock=run||lockedRest||over;
@@ -549,16 +627,18 @@ function renderList(force){
         ${range}
         <input class="dur-in num" value="${over?'−'+fmtHM(ms):run?fmtHMS(ms):fmtHM(ms)}" ${lock?'disabled title="'+esc(tr(over?'LIST.OVER_TOOLTIP':'LIST.RUNNING_LOCKED'))+'"':''} aria-label="${esc(tr('MANUAL.DURATION'))}">
         <button class="iconbtn play" data-act="play" title="${esc(tr(run?'LIST.IS_RUNNING':'LIST.CONTINUE'))}" aria-label="${esc(tr('LIST.CONTINUE'))}" ${run?'disabled':''}>${ICON_PLAY}</button>
-        <div class="menu"><button class="iconbtn" data-act="menu" aria-label="${esc(tr('LIST.MORE_ACTIONS'))}" ${lock?'disabled':''}>${ICON_MORE}</button>
-          ${openMenu===key?`<div class="menu-list"><button data-act="edit">${esc(tr('LIST.EDIT'))}</button><button data-act="ask-del" class="del">${esc(tr('LIST.DELETE'))}</button></div>`:''}</div>`;
+        <div class="menu"><button class="iconbtn" data-act="menu" aria-label="${esc(tr('LIST.MORE_ACTIONS'))}" ${run||lockedRest?'disabled':''}>${ICON_MORE}</button>
+          ${openMenu===key?(over
+            ?`<div class="menu-list"><button data-act="align" title="${esc(tr('LIST.ALIGN_TOOLTIP'))}">${esc(tr('LIST.ALIGN',{duration:fmtHM(ms)}))}</button><button data-act="trim" title="${esc(tr('LIST.TRIM_TOOLTIP'))}">${esc(tr('LIST.TRIM',{duration:fmtHM(ms)}))}</button></div>`
+            :`<div class="menu-list"><button data-act="edit">${esc(tr('LIST.EDIT'))}</button><button data-act="ask-del" class="del">${esc(tr('LIST.DELETE'))}</button></div>`):''}</div>`;
       if(editing){
         h+=`<div class="edit"><label>${esc(tr('MANUAL.DATE'))}<input type="date" id="eDate" value="${d}"></label>`+
           (it.kind==='seg'
-            ?`<label>${esc(tr('MANUAL.FROM'))}<input type="time" id="eFrom" value="${hhmm(it.s.start)}"></label><label>${esc(tr('MANUAL.TO'))}<input type="time" id="eTo" value="${hhmm(it.s.end)}"></label>`
+            ?`<label>${esc(tr('MANUAL.FROM'))}<input type="time" id="eFrom" value="${hhmm(it.s.start)}"></label><label>${esc(tr('MANUAL.TO'))}<input type="time" id="eTo" value="${hhmm(segEnd(it.s))}"></label>`
             :`<label>${esc(tr('MANUAL.DURATION'))}<input id="eDur" value="${fmtHM(ms)}" style="width:80px;font-family:var(--mono)"></label>`)+
           `<span style="flex:1"></span><button class="btn" data-act="cancel">${esc(tr('LIST.CANCEL'))}</button><button class="btn primary" data-act="save">${esc(tr('LIST.SAVE'))}</button></div>`;
       }
-      if(confirmKey===key)h+=`<div class="confirm"><span>${esc(tr('LIST.CONFIRM_DELETE',{what:it.kind==='seg'?hhmm(it.s.start)+'–'+hhmm(it.s.end)+' ('+fmtHM(ms)+')':tr('LIST.WITHOUT_TIME',{duration:fmtHM(ms)}),day:dayLabel(d),title:t.title}))}</span><button class="btn" data-act="cancel">${esc(tr('LIST.CANCEL'))}</button><button class="btn danger" data-act="del">${esc(tr('LIST.DELETE'))}</button></div>`;
+      if(confirmKey===key)h+=`<div class="confirm"><span>${esc(tr('LIST.CONFIRM_DELETE',{what:it.kind==='seg'?hhmm(it.s.start)+'–'+hhmm(segEnd(it.s))+' ('+fmtHM(ms)+')':tr('LIST.WITHOUT_TIME',{duration:fmtHM(ms)}),day:dayLabel(d),title:t.title}))}</span><button class="btn" data-act="cancel">${esc(tr('LIST.CANCEL'))}</button><button class="btn danger" data-act="del">${esc(tr('LIST.DELETE'))}</button></div>`;
       return h+'</div>';
     }).join('')+'</section>').join('');
   if(editKey&&$('eQ'))attachEditSearch();
@@ -571,8 +651,9 @@ function attachEditSearch(){
 }
 // Move/correct: subtract the old value, add the new one in timeSpentOnDay, then update the entry.
 async function rebook(it,ntId,nd,ms,newStart,newEnd){
-  if(ntId===it.t.id&&nd===it.d)await addTime(ntId,nd,ms-it.ms);
-  else{await addTime(it.t.id,it.d,-it.ms);await addTime(ntId,nd,ms)}
+  const sum=it.kind==='seg'?segSumOf(it.t.id,it.d):null;
+  if(ntId===it.t.id&&nd===it.d)await addTime(ntId,nd,ms-it.ms,sum);
+  else{await addTime(it.t.id,it.d,-it.ms,sum);await addTime(ntId,nd,ms)}
   if(it.kind==='seg')await segUpdate(it.s,{taskId:ntId,start:newStart,end:newEnd,seen:newEnd},nd);
 }
 $('list').addEventListener('click',e=>{
@@ -583,14 +664,24 @@ $('list').addEventListener('click',e=>{
     case'edit':openMenu=null;editKey=key;eTaskId=it.t.id;confirmKey=null;renderList(true);$('eQ').focus();break;
     case'ask-del':openMenu=null;confirmKey=key;editKey=null;renderList(true);break;
     case'cancel':editKey=confirmKey=null;renderList(true);break;
-    case'del':run(async()=>{await addTime(it.t.id,it.d,-it.ms);if(it.kind==='seg')await segRemove(it.s)},tr('LIST.DELETED'));break;
+    case'del':run(async()=>{const x=freshItem(key);if(!x)return false;
+      await addTime(x.t.id,x.d,-x.ms,x.kind==='seg'?segSumOf(x.t.id,x.d):null);if(x.kind==='seg')await segRemove(x.s)},tr('LIST.DELETED'));break;
+    case'align':run(async()=>{const x=freshItem(key);if(!x||x.kind!=='over')return false;await addTime(x.t.id,x.d,x.ms)},tr('LIST.ALIGNED'));break;
+    // Shorten the last entry by the excess; if it is shorter than that, remove it and continue
+    // with the one before. timeSpentOnDay stays unchanged. A running entry is left alone.
+    case'trim':run(async()=>{const x=freshItem(key);if(!x||x.kind!=='over')return false;
+      let rest=x.ms;
+      const list=segs.filter(y=>y.taskId===x.t.id&&y.day===x.d&&!isActive(y)).sort((a,b)=>b.start-a.start);
+      for(const y of list){if(rest<=0)break;const dur=segMs(y);
+        if(dur>rest){const end=segEnd(y)-rest;await segUpdate(y,{end,seen:end});rest=0}
+        else{await segRemove(y);rest-=dur}}},tr('LIST.TRIMMED'));break;
     case'save':{
       const nd=$('eDate').value||it.d,nt=eTaskId;
       if(it.kind==='seg'){const f=$('eFrom').value,to=$('eTo').value;if(!f||!to){toast(tr('ERROR.RANGE_MISSING'));return}
         const s=tsFor(nd,f),en=tsFor(nd,to);if(!(en>s)){toast(tr('ERROR.RANGE_ORDER'));return}
-        run(()=>rebook(it,nt,nd,en-s,s,en),tr('LIST.SAVED'))}
+        run(async()=>{const x=freshItem(key);if(!x)return false;await rebook(x,nt,nd,en-s,s,en)},tr('LIST.SAVED'))}
       else{const ms=parseDur($('eDur').value);if(ms==null){toast(tr('ERROR.DURATION'));return}
-        run(()=>rebook(it,nt,nd,ms),tr('LIST.SAVED'))}
+        run(async()=>{const x=freshItem(key);if(!x)return false;await rebook(x,nt,nd,ms)},tr('LIST.SAVED'))}
       break;}
   }
 });
@@ -598,20 +689,24 @@ $('list').addEventListener('change',e=>{
   const row=e.target.closest('.entry');if(!row||editKey)return;const it=lastItems.get(row.dataset.key);if(!it)return;
   if(e.target.classList.contains('dur-in')){
     const ms=parseDur(e.target.value);if(ms==null){toast(tr('ERROR.DURATION'));e.target.blur();renderList(true);return}
-    e.target.blur();
-    if(it.kind==='seg')run(()=>rebook(it,it.t.id,it.d,ms,it.s.start,it.s.start+ms),tr('LIST.DURATION_FIXED'));
-    else run(()=>rebook(it,it.t.id,it.d,ms),tr('LIST.DURATION_FIXED'));
+    e.target.blur();const key=row.dataset.key;
+    run(async()=>{const x=freshItem(key);if(!x||x.kind==='over')return false;
+      if(Math.round(x.ms/60000)===Math.round(ms/60000))return false; // unchanged as displayed
+      if(x.kind==='seg')await rebook(x,x.t.id,x.d,ms,x.s.start,x.s.start+ms);else await rebook(x,x.t.id,x.d,ms)},tr('LIST.DURATION_FIXED'));
   }
 });
 // Apply times only when leaving the field (change fires during typing for type=time)
 $('list').addEventListener('focusout',e=>{
   const el=e.target;if(!el.classList||!el.classList.contains('tm')||editKey)return;
   const row=el.closest('.entry'),it=row&&lastItems.get(row.dataset.key);if(!it||it.kind!=='seg'||!el.value)return;
-  const orig=hhmm(el.dataset.f==='start'?it.s.start:it.s.end);if(el.value===orig)return;
-  let s=it.s.start,en=it.s.end;const v=tsFor(it.d,el.value);
-  if(el.dataset.f==='start')s=v;else en=v;
-  if(!(en>s)){toast(tr('ERROR.RANGE_ORDER'));renderList(true);return}
-  run(()=>rebook(it,it.t.id,it.d,en-s,s,en),tr('LIST.TIME_FIXED'));
+  const key=row.dataset.key,field=el.dataset.f,value=el.value;
+  // Apply only the changed field to the entry as it is when the correction runs
+  run(async()=>{const x=freshItem(key);if(!x||x.kind!=='seg'||isActive(x.s))return false;
+    const cur=field==='start'?x.s.start:segEnd(x.s);if(hhmm(cur)===value)return false;
+    let s=x.s.start,en=segEnd(x.s);const v=tsFor(x.d,value);
+    if(field==='start')s=v;else en=v;
+    if(!(en>s))throw userError(tr('ERROR.RANGE_ORDER'));
+    await rebook(x,x.t.id,x.d,en-s,s,en)},tr('LIST.TIME_FIXED'));
 });
 $('list').addEventListener('keydown',e=>{if((e.target.classList.contains('dur-in')||e.target.classList.contains('tm'))&&e.key==='Enter')e.target.blur();if(e.key==='Escape'&&(editKey||confirmKey)){editKey=confirmKey=null;renderList(true)}});
 $('list').addEventListener('focusout',()=>setTimeout(()=>{if(listDirty&&!isInteracting())renderList()},0));
@@ -650,13 +745,14 @@ function applyTheme(){
 }
 
 // ---------- Sync ----------
+// Every second: timer, the durations of all running rows (here and on other devices), totals
 function tick(){
-  {
-    renderTimer();
-    const row=document.querySelector('.entry.running .dur-in'),s=curSeg();
-    if(row)row.value=fmtHMS(s?segMs(s):tsod(task(runningTaskId())||{},today()));
-    updateTotals();
-  }
+  renderTimer();
+  document.querySelectorAll('#list .entry.running').forEach(row=>{
+    const it=lastItems.get(row.dataset.key),dur=row.querySelector('.dur-in');if(!it||!dur)return;
+    dur.value=fmtHMS(it.kind==='seg'?segMs(it.s):tsod(it.t,it.d));
+  });
+  updateTotals();
 }
 const H_=API.Hooks||{};
 const hook=(h,fn)=>{if(!h)return;try{Promise.resolve(API.registerHook(h,fn)).catch(()=>{})}catch(e){}};
