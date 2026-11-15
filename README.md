@@ -2,6 +2,8 @@
 
 Compact time tracking on its own page: search a task, start/stop, and a chronological list with corrections.
 
+<img width="1270" height="934" alt="sp-compact-time-tracker-v1-full-width" src="https://github.com/user-attachments/assets/432d7eb3-e5ae-441b-933a-4f99d3825b7b" />
+
 ## Requirements
 | Super Productivity | Status |
 |---|---|
