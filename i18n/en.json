@@ -65,7 +65,7 @@
     "EMPTY": "No time tracked in this period. Choose a task above and start the timer.",
     "LOAD_MORE": "Load 7 more days",
     "NO_TIME": "no time of day",
-    "NO_TIME_TOOLTIP": "Tracked time without an entry: added as a duration, tracked in Super Productivity itself, before version 2.0 or without the plugin active",
+    "NO_TIME_TOOLTIP": "Tracked time without an entry: added as a duration, tracked in Super Productivity itself, before the plugin was installed or while it was inactive",
     "RUNNING": "running",
     "RUNNING_LOCKED": "Running, correct it after stopping",
     "CONTINUE": "Continue",

@@ -41,7 +41,7 @@ The background part (`plugin.js`) runs in the app window with the same permissio
 - **Retention:** old entries are not deleted automatically.
 
 **Reconciliation in the list** (per task and day):
-- More time tracked than entries cover (e.g. time from version 1.x, time tracked in Super Productivity itself, or a duration without time of day): the difference appears as a **"no time of day"** row.
+- More time tracked than entries cover (e.g. time tracked before the plugin was installed, time tracked in Super Productivity itself, or a duration without time of day): the difference appears as a **"no time of day"** row.
 - Entries longer than the tracked time (e.g. after a change in Super Productivity or on another device): a red **"entries > tracked"** row appears. The tracked time stays authoritative; adjust or delete the entry.
 
 ## Compact view
@@ -91,6 +91,6 @@ Try changes on test data, not your real tasks: use a separate browser profile wi
 
 ### Releases
 1. Set `version` in `manifest.json` (and `package.json`).
-2. Commit and push a tag matching the version, e.g. `v2.0.0`.
+2. Commit and push a tag matching the version, e.g. `v1.0.0`.
 
 The release workflow (`.github/workflows/release.yml`) embeds the translations, packs `plugin.zip`, and attaches it to the GitHub release. The release notes show the SHA-256 for a `community-plugins.json` listing.

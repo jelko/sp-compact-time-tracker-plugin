@@ -65,7 +65,7 @@
     "EMPTY": "In diesem Zeitraum wurde keine Zeit gebucht. Wähle oben eine Aufgabe und starte den Timer.",
     "LOAD_MORE": "Weitere 7 Tage laden",
     "NO_TIME": "ohne Uhrzeit",
-    "NO_TIME_TOOLTIP": "Gebuchte Zeit ohne Abschnitt: manuell als Dauer gebucht, in Super Productivity selbst erfasst, vor Version 2.0 oder ohne aktives Plugin",
+    "NO_TIME_TOOLTIP": "Gebuchte Zeit ohne Abschnitt: manuell als Dauer gebucht, in Super Productivity selbst erfasst, vor der Installation des Plugins oder während es inaktiv war",
     "RUNNING": "läuft",
     "RUNNING_LOCKED": "Läuft gerade, Korrektur nach dem Stoppen",
     "CONTINUE": "Fortsetzen",
