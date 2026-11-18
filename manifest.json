@@ -1,12 +1,13 @@
 {
   "id": "compact-time-tracker",
   "name": "Compact Time Tracker",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "manifestVersion": 1,
   "minSupVersion": "19.3.0",
   "description": "Compact time tracking: search a task, start/stop, chronological list with corrections. timeSpentOnDay stays authoritative; from–to entries are stored with persistDataSynced.",
   "author": "JA",
   "hooks": [
+    "action",
     "anyTaskUpdate",
     "currentTaskChange",
     "dayChange",

@@ -71,6 +71,8 @@
     if (!r) return Promise.resolve();
     var seg = r.seg;
     seg.end = now; seg.seen = now;
+    // Stopped because of inactivity: the entry ends where the inactivity began
+    if (idle && idle.start > seg.start && idle.start < now) seg.end = idle.start;
     // Reconcile: if Super Productivity tracked less than the wall-clock duration (idle time
     // discarded), move the end earlier. timeSpentOnDay is left untouched.
     function reconcile(t) {
@@ -195,6 +197,53 @@
       state.day = dayOf(Date.now());
     });
   }
+
+  // ---- Inactivity ----
+  // After a period of inactivity Super Productivity stops the timer, removes the idle time and
+  // asks in a dialog how to book it. The booked time arrives in one block, so on its own it would
+  // show as "no time of day". The ACTION hook reports the steps (same action types in 19.3 and 20):
+  //   [Idle] Trigger Idle {idleTime}      inactivity began idleTime ms ago
+  //   [Idle] Dialog result                the user confirmed the dialog
+  //   [TimeTracking] Sync time spent      time booked on an existing task {taskId, date, duration}
+  //   [Task Shared] addTask               a new task created in the dialog, with its time
+  //   [Idle] Reset                        done
+  // Between "Dialog result" and "Reset" every booking becomes an entry, one after another,
+  // starting where the inactivity began. timeSpentOnDay is not touched; the entries only add the
+  // time of day to what Super Productivity booked.
+  var idle = null; // {start, booking, cursor}
+  function addIdleEntry(taskId, day, duration) {
+    if (!idle || !idle.booking || !taskId || !(duration > 0)) return;
+    var seg = { id: newId(), taskId: taskId, start: idle.cursor, end: idle.cursor + duration,
+      seen: idle.cursor + duration, base: null, dev: state.device };
+    idle.cursor = seg.end;
+    writeSeg(keyFor(day || dayOf(seg.start), seg.id), seg);
+  }
+  function onAction(payload) {
+    var a = payload && payload.action;
+    if (!a || typeof a.type !== 'string') return;
+    switch (a.type) {
+      case '[Idle] Trigger Idle':
+        idle = { start: Date.now() - (+a.idleTime || 0), booking: false, cursor: 0 };
+        break;
+      case '[Idle] Dialog result':
+        if (idle) { idle.booking = true; idle.cursor = idle.start; }
+        break;
+      case '[TimeTracking] Sync time spent':
+        addIdleEntry(a.taskId, a.date, +a.duration);
+        break;
+      case '[Task Shared] addTask':
+        if (a.task && a.task.timeSpentOnDay) {
+          Object.keys(a.task.timeSpentOnDay).forEach(function (d) {
+            addIdleEntry(a.task.id, d, +a.task.timeSpentOnDay[d]);
+          });
+        }
+        break;
+      case '[Idle] Reset':
+        idle = null;
+        break;
+    }
+  }
+  if (PluginAPI.Hooks.ACTION) PluginAPI.registerHook(PluginAPI.Hooks.ACTION, onAction);
 
   PluginAPI.registerHook(PluginAPI.Hooks.CURRENT_TASK_CHANGE, onCurrentTaskChange);
   if (PluginAPI.Hooks.DAY_CHANGE) {
