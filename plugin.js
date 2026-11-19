@@ -64,8 +64,29 @@
     return enqueue(function () { return PluginAPI.persistDataSynced(data, key); });
   }
 
+  // ---- Entries under one minute are discarded, together with their tracked time ----
+  // (e.g. an accidental start or a quick switch). Not applied to the split at midnight.
+  function removeTracked(taskId, day, amount) {
+    if (!(amount > 0)) return Promise.resolve();
+    return enqueue(function () {
+      return PluginAPI.getTasks().then(function (tasks) {
+        var t = tasks.find(function (x) { return x.id === taskId; });
+        if (!t) return;
+        var map = {};
+        Object.keys(t.timeSpentOnDay || {}).forEach(function (k) { map[k] = t.timeSpentOnDay[k]; });
+        var v = Math.max(0, (map[day] || 0) - amount);
+        if (v > 0) map[day] = v; else delete map[day];
+        return PluginAPI.updateTask(taskId, { timeSpentOnDay: map });
+      });
+    });
+  }
+  function discard(key, seg, day, amount) {
+    enqueue(function () { return PluginAPI.persistDataSynced('', key); });
+    return removeTracked(seg.taskId, day, amount);
+  }
+
   // ---- Recording ----
-  function closeRunning(now, snapshotTask) {
+  function closeRunning(now, snapshotTask, keepShort) {
     var r = state.running;
     state.running = null;
     if (!r) return Promise.resolve();
@@ -75,9 +96,11 @@
     if (idle && idle.start > seg.start && idle.start < now) seg.end = idle.start;
     // Reconcile: if Super Productivity tracked less than the wall-clock duration (idle time
     // discarded), move the end earlier. timeSpentOnDay is left untouched.
+    var tracked = null; // time Super Productivity booked for this run
     function reconcile(t) {
       if (!t || seg.base == null) return;
       var actual = ((t.timeSpentOnDay || {})[r.day] || 0) - seg.base;
+      if (actual >= 0) tracked = actual;
       if (actual >= 0 && actual < (seg.end - seg.start) - MIN) seg.end = seg.start + actual;
     }
     // Write the end right away, then again if reconciling moves it
@@ -86,7 +109,11 @@
     var p = snapshotTask && snapshotTask.id === seg.taskId
       ? Promise.resolve(reconcile(snapshotTask))
       : PluginAPI.getTasks().then(function (ts) { reconcile(ts.find(function (x) { return x.id === seg.taskId; })); }, function () {});
-    return p.then(function () { if (seg.end !== endBefore) return writeSeg(r.key, seg); });
+    return p.then(function () {
+      var dur = seg.end - seg.start;
+      if (!keepShort && dur < MIN) return discard(r.key, seg, r.day, tracked != null ? Math.min(tracked, MIN) : dur);
+      if (seg.end !== endBefore) return writeSeg(r.key, seg);
+    });
   }
 
   function openSeg(task, now) {
@@ -112,7 +139,7 @@
     var r = state.running;
     if (!r) return;
     var now = Date.now();
-    closeRunning(now, null);
+    closeRunning(now, null, true);
     openSeg({ id: r.seg.taskId, timeSpentOnDay: {} }, now);
   }
 
@@ -216,7 +243,10 @@
     var seg = { id: newId(), taskId: taskId, start: idle.cursor, end: idle.cursor + duration,
       seen: idle.cursor + duration, base: null, dev: state.device };
     idle.cursor = seg.end;
-    writeSeg(keyFor(day || dayOf(seg.start), seg.id), seg);
+    var d = day || dayOf(seg.start);
+    // under one minute: no entry, and the booking is taken back
+    if (duration < MIN) { removeTracked(taskId, d, duration); return; }
+    writeSeg(keyFor(d, seg.id), seg);
   }
   function onAction(payload) {
     var a = payload && payload.action;
@@ -292,7 +322,8 @@
     open.forEach(function (o) {
       if (o.seg.id === runningId) return;
       o.seg.end = Math.max(o.seg.start, o.seg.seen || o.seg.start);
-      writeSeg(o.key, o.seg);
+      if (o.seg.end - o.seg.start < MIN) discard(o.key, o.seg, o.day, o.seg.end - o.seg.start);
+      else writeSeg(o.key, o.seg);
     });
   }
 

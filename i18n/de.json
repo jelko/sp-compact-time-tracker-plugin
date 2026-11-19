@@ -97,7 +97,8 @@
     "DURATION": "Dauer nicht erkannt, z. B. 1:30, 90m oder 1,5h",
     "RANGE_ORDER": "„Bis“ muss nach „Von“ liegen",
     "RANGE_MISSING": "Von und Bis angeben",
-    "TASK_NOT_FOUND": "Aufgabe nicht gefunden"
+    "TASK_NOT_FOUND": "Aufgabe nicht gefunden",
+    "MIN_MINUTE": "Mindestens 1 Minute"
   },
   "INFO": {
     "STORAGE": "Maßgeblich ist die Zeit je Tag (timeSpentOnDay). Von–Bis-Abschnitte werden zusätzlich gespeichert und synchronisiert."

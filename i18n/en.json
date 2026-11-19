@@ -97,7 +97,8 @@
     "DURATION": "Duration not recognised, e.g. 1:30, 90m or 1.5h",
     "RANGE_ORDER": "“To” must be after “From”",
     "RANGE_MISSING": "Enter From and To",
-    "TASK_NOT_FOUND": "Task not found"
+    "TASK_NOT_FOUND": "Task not found",
+    "MIN_MINUTE": "At least 1 minute"
   },
   "INFO": {
     "STORAGE": "The time per day (timeSpentOnDay) is authoritative. From–to entries are stored and synced in addition."

@@ -35,6 +35,7 @@ The background part (`plugin.js`) runs in the app window with the same permissio
   - On quit or crash, at most about one minute is lost.
 
 **From–to entries** are stored with `persistDataSynced` and synced by Super Productivity.
+- **Under one minute:** an entry shorter than one minute (e.g. an accidental start or a quick switch) is discarded when it stops, and its seconds are taken back from `timeSpentOnDay`. The same applies to bookings under one minute from the inactivity dialog. Manual input under one minute is rejected. Not affected: the split of a running entry at the start of a new day.
 - **Keys:** one key per entry, `seg-<YYYY-MM-DD>-<entryId>` (logical day). Content: `{"v":2,"seg":{id,taskId,start,end,seen,base}}`.
 - **Why one key per entry:** every key has a single writer at a time. The background part writes only the running entry, the page only finished ones, so no write can overwrite another. Sync resolves conflicts per key by "last write wins", so devices never overwrite each other's entries either.
 - **Older format:** keys from 1.0.x (`seg-<day>-<session>` with `{"v":1,"segs":[...]}`) are migrated automatically when the plugin starts.
